@@ -17,5 +17,5 @@ public interface IAgent
 
     ValueTask<Result> StopAsync(string service);
 
-    ValueTask<Result> DestoryAsync(string service);
+    ValueTask<Result> DestroyAsync(string service);
 }
