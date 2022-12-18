@@ -4,18 +4,16 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using CoreService.Api.Injector;
 using CoreService.Api.Logging;
-using CoreService.Api.Persistences;
+using CoreService.Shared.Internals;
 using FluentResults;
 using Microsoft.Extensions.Logging;
 
 public partial class Injector
 {
-    private readonly IPersistence persistence;
     private readonly ILogger logger;
 
-    public Injector(IPersistence persistence, ILogger<Injector> logger)
+    public Injector(ILogger<Injector> logger)
     {
-        this.persistence = persistence;
         this.logger = logger;
     }
 
@@ -34,9 +32,8 @@ public partial class Injector
         return result.ToList();
     }
 
-    public async ValueTask<Result<string>> InjectAsync(string input, IDictionary<string, string> prompts)
+    public Result<string> Inject(string input, Internal internals, IDictionary<string, string> prompts)
     {
-        var internals = await persistence.LoadInternalAsync();
         using var doc = JsonSerializer.SerializeToDocument(internals);
 
         // Prevent GENERATE from being assigned different values.
