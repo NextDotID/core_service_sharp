@@ -17,5 +17,5 @@ public interface IProxy
     /// <returns>A dictionary of which key is external route and value is internal route.</returns>
     ValueTask<Result<IList<ProxyRoute>>> GetRoutesAsync();
 
-    ValueTask<Result> SetRouteAsync(string service, string exRoute, string inRoute);
+    ValueTask<Result> SetRouteAsync(ProxyRoute route);
 }

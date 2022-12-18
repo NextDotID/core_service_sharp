@@ -18,5 +18,5 @@ public record AgentConfig
 
     public ComposeConfig? Docker { get; init; }
 
-    public record ComposeConfig(string Socket);
+    public record ComposeConfig(string Socket, ComposeProxyType Proxy);
 }

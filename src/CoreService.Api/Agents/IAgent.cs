@@ -13,6 +13,8 @@ public interface IAgent
 
     ValueTask<Result<bool>> CreateAsync(string service);
 
+    ValueTask<Result> ExecuteAsync(string service, string container, string command);
+
     ValueTask<Result> StartAsync(string service);
 
     ValueTask<Result> StopAsync(string service);
