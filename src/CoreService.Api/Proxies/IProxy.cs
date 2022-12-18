@@ -1,5 +1,6 @@
 namespace CoreService.Api.Proxies;
 
+using CoreService.Shared.Proxies;
 using FluentResults;
 
 public interface IProxy
@@ -14,7 +15,7 @@ public interface IProxy
     /// Get all routes proxied.
     /// </summary>
     /// <returns>A dictionary of which key is external route and value is internal route.</returns>
-    ValueTask<Result<IDictionary<string, string>>> GetRoutesAsync();
+    ValueTask<Result<IList<ProxyRoute>>> GetRoutesAsync();
 
-    ValueTask<Result> SetRouteAsync(string exRoute, string inRoute);
+    ValueTask<Result> SetRouteAsync(string service, string exRoute, string inRoute);
 }
