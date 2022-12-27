@@ -6,17 +6,11 @@ public enum AgentType
     Kubernetes,
 }
 
-public enum ComposeProxyType
-{
-    Caddy,
-    Kong,
-}
-
 public record AgentConfig
 {
     public AgentType Type { get; init; } = AgentType.Compose;
 
     public ComposeConfig? Docker { get; init; }
 
-    public record ComposeConfig(string Socket, ComposeProxyType Proxy);
+    public record ComposeConfig(string Socket);
 }

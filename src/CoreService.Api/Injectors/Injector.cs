@@ -1,12 +1,14 @@
-namespace CoreService.Shared.Injector;
+namespace CoreService.Api.Injectors;
 
 using System.Text.Json;
 using System.Text.RegularExpressions;
-using CoreService.Api.Injector;
 using CoreService.Api.Logging;
+using CoreService.Shared.Injectors;
 using CoreService.Shared.Internals;
 using FluentResults;
 using Microsoft.Extensions.Logging;
+using Nethereum.Hex.HexConvertors.Extensions;
+using SimpleBase;
 
 public partial class Injector
 {
@@ -43,7 +45,7 @@ public partial class Injector
         {
             GeneratePoint gp => ResolveGeneratePoint(gp, genDict),
             PromptPoint { Key: var key } => prompts.TryGetValue(key, out var pValue) ? pValue : match.Value,
-            InternalPoint { Key: var key } => ResolvePath(doc, key) ?? match.Value,
+            InternalPoint { Key: var key, Transform: var transform } => ResolveInternal(doc, key, transform) ?? match.Value,
             _ => match.Value,
         });
     }
@@ -53,18 +55,18 @@ public partial class Injector
     /// </summary>
     /// <param name="input">Text to validate.</param>
     /// <returns><c>True</c> if all replaced.</returns>
-    public Result<bool> Validate(string input) => !InjectPattern().Matches(input).Any();
+    public bool Validate(string input) => !InjectPattern().Matches(input).Any();
 
     /// <summary>
     /// General injection point. May contains these 3 types:
     /// <code>{{GENERATE:AN:64:DB_PASSWORD}}</code>
     /// <code>{{PROMPT:DB_PASSWORD}}</code>
-    /// <code>{{INTERNAL:SUBKEY_PUB}}</code>
+    /// <code>{{INTERNAL:SUBKEY_PRIVATE(:HEX)}}</code>
     /// </summary>
     [GeneratedRegex("\\{\\{(.+?)}}")]
     private static partial Regex InjectPattern();
 
-    private static string? ResolvePath(JsonDocument doc, string path)
+    private static string? ResolveInternal(JsonDocument doc, string path, InternalTransform transform)
     {
         var element = doc.RootElement;
         foreach (var part in path.Split('_'))
@@ -75,7 +77,14 @@ public partial class Injector
             }
         }
 
-        return element.GetString();
+        return transform switch
+        {
+            InternalTransform.None => element.GetString(),
+            InternalTransform.Hex => element.GetString(),
+            InternalTransform.Base58 => Base58.Bitcoin.Encode(element.GetString().HexToByteArray()),
+            InternalTransform.Base64 => Convert.ToBase64String(element.GetString().HexToByteArray()),
+            _ => throw new NotImplementedException(),
+        };
     }
 
     private static string ResolveGeneratePoint(GeneratePoint gp, Dictionary<GeneratePoint, string> dict)

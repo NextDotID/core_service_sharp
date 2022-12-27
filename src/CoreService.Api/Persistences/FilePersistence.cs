@@ -1,74 +1,124 @@
 namespace CoreService.Api.Persistences;
 
-using System.Text.Json;
+using System.IO;
 using System.Threading.Tasks;
 using CoreService.Api.Logging;
-using CoreService.Shared.Internals;
 using FluentResults;
 
 public class FilePersistence : IPersistence
 {
-    private const string InternalFileName = "internal.json";
-    private readonly string rootDir;
-
+    private readonly string rootDirectory;
+    private readonly string hostDirectory;
     private readonly ILogger logger;
 
-    public FilePersistence(string rootDir, ILogger<FilePersistence> logger)
+    public FilePersistence(string rootDirectory, string hostDirectory, ILogger<FilePersistence> logger)
     {
-        this.rootDir = rootDir;
+        this.rootDirectory = rootDirectory;
+        this.hostDirectory = hostDirectory;
         this.logger = logger;
     }
 
-    public async ValueTask<Result<string>> LoadAsync(string key)
+    public ValueTask<Result> DeleteAsync(string service, string? filename = null)
     {
-        if (string.Equals(key, InternalFileName, StringComparison.OrdinalIgnoreCase))
+        if (string.IsNullOrEmpty(service) || !Path.Exists(Path.Combine(rootDirectory, service)))
         {
-            logger.LoadKeyInvalid(key);
-            return Result.Fail("invalid key");
+            logger.LoadKeyInvalid(service);
+            return ValueTask.FromResult(Result.Fail("service name is required"));
         }
 
-        var path = Path.Combine(rootDir, key);
-        if (!File.Exists(path))
+        var path = new string[] { rootDirectory, service, filename! }
+            .Where(x => !string.IsNullOrEmpty(x))
+            .ToArray();
+
+        // Delete all files in the service directory.
+        Directory.Delete(Path.Combine(path));
+
+        if (Path.Exists(Path.Combine(rootDirectory, service)) && !Directory.GetFiles(Path.Combine(rootDirectory, service)).Any())
+        {
+            Directory.Delete(Path.Combine(rootDirectory, service));
+        }
+
+        return ValueTask.FromResult(Result.Ok());
+    }
+
+    public ValueTask<Result<IEnumerable<string>>> ListAsync(string service)
+    {
+        if (string.IsNullOrEmpty(service) || !Path.Exists(Path.Combine(rootDirectory, service)))
+        {
+            logger.LoadKeyInvalid(service);
+            return ValueTask.FromResult(Result.Fail<IEnumerable<string>>("service name is required"));
+        }
+
+        var dir = new DirectoryInfo(Path.Combine(rootDirectory, service));
+        return ValueTask.FromResult(Result.Ok<IEnumerable<string>>(
+            dir.GetFiles("*", SearchOption.AllDirectories)
+            .Select(f => Path.GetRelativePath(dir.FullName, f.FullName))
+            .ToList()));
+    }
+
+    public ValueTask<Result<string>> GetPathAsync(string service, string? filename = null)
+    {
+        if (string.IsNullOrEmpty(service) || !Path.Exists(Path.Combine(rootDirectory, service)))
+        {
+            logger.LoadKeyInvalid(service);
+            return ValueTask.FromResult(Result.Fail<string>("service name is required"));
+        }
+
+        var path = new string[] { rootDirectory, service, filename! }
+            .Where(x => !string.IsNullOrEmpty(x))
+            .ToArray();
+        return ValueTask.FromResult(Result.Ok(Path.Combine(path)));
+    }
+
+    public ValueTask<Result<string>> GetAbsolutePathAsync(string service, string? filename = null)
+    {
+        if (string.IsNullOrEmpty(service) || !Path.Exists(Path.Combine(rootDirectory, service)))
+        {
+            logger.LoadKeyInvalid(service);
+            return ValueTask.FromResult(Result.Fail<string>("service name is required"));
+        }
+
+        var path = new string[] { hostDirectory, service, filename! }
+            .Where(x => !string.IsNullOrEmpty(x))
+            .ToArray();
+        return ValueTask.FromResult(Result.Ok(Path.Combine(path)));
+    }
+
+    public ValueTask<Result<Stream>> ReadAsync(string service, string filename)
+    {
+        var path = Path.Combine(rootDirectory, service, filename);
+        if (!Path.Exists(path))
         {
             logger.LoadKeyFileNotFound(path);
-            return Result.Fail("file not found");
+            return ValueTask.FromResult(Result.Fail<Stream>("file is not found"));
         }
 
-        return await File.ReadAllTextAsync(path);
+        Stream stream = File.OpenRead(path);
+        return ValueTask.FromResult(Result.Ok(stream));
     }
 
-    public async ValueTask<Result<Internal>> LoadInternalAsync()
+    public async ValueTask<Result> WriteAsync(string service, string filename, Stream data, bool leaveOpen = false)
     {
-        var path = Path.Combine(rootDir, InternalFileName);
-        if (!File.Exists(path))
+        var dirPath = Path.Combine(rootDirectory, service);
+        if (!Path.Exists(dirPath))
         {
-            logger.LoadInternalFileNotFound(path);
-            return Result.Fail("file not found");
+            Directory.CreateDirectory(dirPath);
         }
 
-        await using var stream = File.OpenRead(path);
-        var internals = await JsonSerializer.DeserializeAsync<Internal>(stream);
-        return internals ?? Result.Fail<Internal>("invalid internal");
-    }
-
-    public async ValueTask<Result> SaveAsync(string key, string data)
-    {
-        if (string.Equals(key, InternalFileName, StringComparison.OrdinalIgnoreCase))
+        var filePath = Path.Combine(rootDirectory, service, filename);
+        try
         {
-            logger.SaveKeyInvalid(key);
-            return Result.Fail("invalid key");
+            await using var fileStream = File.Open(filePath, FileMode.OpenOrCreate);
+            await data.CopyToAsync(fileStream);
+        }
+        finally
+        {
+            if (!leaveOpen)
+            {
+                data.Dispose();
+            }
         }
 
-        var path = Path.Combine(rootDir, key);
-        await File.WriteAllTextAsync(path, data);
-        return Result.Ok();
-    }
-
-    public async ValueTask<Result> SaveInternalAsync(Internal internals)
-    {
-        var path = Path.Combine(rootDir, InternalFileName);
-        await using var stream = File.OpenWrite(path);
-        await JsonSerializer.SerializeAsync(stream, internals);
         return Result.Ok();
     }
 }

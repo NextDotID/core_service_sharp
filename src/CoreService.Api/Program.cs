@@ -1,11 +1,24 @@
+using Chubrik.Json;
+using CoreService.Api.Agents;
+using CoreService.Api.Injectors;
+using CoreService.Api.Persistences;
+using CoreService.Api.Vaults;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-builder.Services.AddControllers();
+builder.Services
+    .Configure<RouteOptions>(options => options.LowercaseUrls = true)
+    .AddControllers()
+    .AddJsonOptions(options => options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicies.SnakeLowerCase);
 
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddHttpClient();
+
+builder.Services.AddPersistence();
+builder.Services.AddTransient<IVault, PersistenceVault>();
+builder.Services.AddTransient<IAgent, DockerComposeAgent>();
+builder.Services.AddTransient<Injector>();
 
 var app = builder.Build();
 

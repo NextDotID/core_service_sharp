@@ -1,4 +1,4 @@
-namespace CoreService.Api.Injector;
+namespace CoreService.Api.Injectors;
 
 using System.Security.Cryptography;
 using System.Text;

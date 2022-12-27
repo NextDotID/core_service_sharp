@@ -1,5 +1,6 @@
-namespace CoreService.Api.Injector;
+namespace CoreService.Shared.Injectors;
 
+using System.Text.Json.Serialization;
 using Open.Text;
 
 public enum GenerateCategory
@@ -8,6 +9,17 @@ public enum GenerateCategory
     Base64,
 }
 
+public enum InternalTransform
+{
+    None,
+    Hex,
+    Base64,
+    Base58,
+}
+
+[JsonDerivedType(typeof(GeneratePoint), nameof(GeneratePoint))]
+[JsonDerivedType(typeof(PromptPoint), nameof(PromptPoint))]
+[JsonDerivedType(typeof(InternalPoint), nameof(InternalPoint))]
 public abstract record InjectionPoint
 {
     public static InjectionPoint FromText(ReadOnlySpan<char> text)
@@ -17,7 +29,7 @@ public abstract record InjectionPoint
         {
             "GENERATE" => ParseGeneratePoint(parts),
             "PROMPT" => new PromptPoint(parts[1]),
-            "INTERNAL" => new InternalPoint(parts[1].ToString()),
+            "INTERNAL" => ParseInternalPoint(parts),
             _ => throw new ArgumentException($"Invalid injection point type: {text}"),
         };
     }
@@ -28,10 +40,18 @@ public abstract record InjectionPoint
         "BASE64" => new GeneratePoint(GenerateCategory.Base64, int.Parse(parts[2]), parts[3].ToString()),
         _ => throw new ArgumentException("Invalid generate category"),
     };
+
+    private static InternalPoint ParseInternalPoint(IReadOnlyList<string> parts) => parts.ElementAtOrDefault(2) switch
+    {
+        "HEX" => new InternalPoint(parts[1].ToString(), InternalTransform.Hex),
+        "BASE64" => new InternalPoint(parts[1].ToString(), InternalTransform.Base64),
+        "BASE58" => new InternalPoint(parts[1].ToString(), InternalTransform.Base58),
+        _ => new InternalPoint(parts[1].ToString(), InternalTransform.None),
+    };
 }
 
 public record GeneratePoint(GenerateCategory Category, int Length, string Key) : InjectionPoint();
 
 public record PromptPoint(string Key) : InjectionPoint();
 
-public record InternalPoint(string Key) : InjectionPoint();
+public record InternalPoint(string Key, InternalTransform Transform) : InjectionPoint();

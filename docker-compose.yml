@@ -1,0 +1,33 @@
+version: "3"
+
+services:
+  core_service:
+    build:
+      context: ./
+      dockerfile: ./src/CoreService.Api/Dockerfile
+    networks:
+      - core_service
+    restart: unless-stopped
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "./config.json:/app/appsettings.Production.json"
+      - "./persistence/:/app/persistence/"
+    labels:
+      - "traefik.http.routers.core_service.rule=PathPrefix(`/api/`)"
+
+  traefik:
+    container_name: traefik
+    image: "traefik:latest"
+    networks:
+      - core_service
+    command: --api.insecure=true --providers.docker
+    ports:
+      - "80:80"
+      - "8080:8080"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+
+networks:
+  # pre-created
+  core_service:
+    external: true
