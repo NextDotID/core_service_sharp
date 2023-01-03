@@ -4,8 +4,6 @@ on:
   push:
     branches:
     - main
-    # DEBUG
-    - feature/CI
 
 jobs:
   build-image:
