@@ -466,3 +466,5 @@ build/*.mk
 
 dist/
 .serverless/
+/docker-compose.yml
+/persistence
