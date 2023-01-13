@@ -1,0 +1,87 @@
+@page "/create"
+@using System.ComponentModel.DataAnnotations;
+@using CoreService.Shared.Injectors;
+
+<PageTitle>New Service | Core Service</PageTitle>
+
+<EditForm EditContext="editContext">
+    <DataAnnotationsValidator />
+    <MudCard>
+        @if (loading)
+        {
+            <MudSkeleton Class="" />
+            <MudSkeleton Class="my-4" SkeletonType="SkeletonType.Circle" Width="50px" Height="50px" />
+            <MudSkeleton Class="" SkeletonType="SkeletonType.Rectangle" Width="200px" Height="110px" />
+        }
+        else if (prepared)
+        {
+            // TODO: Injection points edit table.
+        }
+        else
+        {
+            <MudCardContent>
+                <MudTextField Label="Service Name"
+                              @bind-Value="model.Name"
+                              For="@(() => model.Name)">
+                </MudTextField>
+                <MudTextField Label="Manifest URL"
+                              @bind-Value="model.Manifest"
+                              For="@(() => model.Manifest)">
+                </MudTextField>
+            </MudCardContent>   
+        }
+        <MudCardActions>
+            <MudButton OnClick="@(() => prepared ? Build() : Prepare())"
+                       Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       Class="ml-auto"
+                       StartIcon="@Icons.Material.Filled.Add">
+                @(prepared ? "Create" : "Prepare")
+            </MudButton>
+        </MudCardActions>
+    </MudCard>
+</EditForm>
+
+@code {
+    private bool loading = false;
+    // After POST /prepare.
+    private bool prepared = false;
+    private List<InjectionPoint> Injections { get; set; } = new List<InjectionPoint>();
+
+    private CreateServiceForm model = new();
+    private EditContext editContext = null!;
+
+    protected override void OnInitialized()
+    {
+        Breadcrumbs.SetItems(new BreadcrumbItem("Create", "/", true, Icons.Material.Filled.Campaign));
+        editContext = new EditContext(model);
+    }
+
+    private async Task Prepare()
+    {
+        if (!editContext.Validate())
+        {
+            StateHasChanged();
+            return;
+        }
+
+        prepared = true;
+        throw new NotImplementedException();
+    }
+
+    private async Task Build()
+    {
+        throw new NotImplementedException();
+    }
+
+    public class CreateServiceForm
+    {
+        [Required(ErrorMessage = "Service name is required!")]
+        [StringLength(200, MinimumLength = 4, ErrorMessage = "Service name must be at least 4 characters long!")]
+        public string Name { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Manifest URL is required!")]
+        [Url(ErrorMessage = "Manifest URL must be valid!")]
+        public string Manifest { get; set; } = string.Empty;
+    }
+}

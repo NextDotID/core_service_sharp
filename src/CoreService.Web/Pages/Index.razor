@@ -1,0 +1,58 @@
+@page "/"
+
+<PageTitle>Dashboard | Core Service</PageTitle>
+
+@if (loaded)
+{
+<MudTable
+          Hover="true"
+          Items="@List"
+          SortLabel="Sort By"
+          T="ServiceStatus">
+        <ToolBarContent>
+            <MudText Typo="Typo.h6">Services</MudText>
+            <MudSpacer />
+            <MudTextField @bind-Value="searchString" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+        </ToolBarContent>
+        <HeaderContent>
+            <MudTh><MudTableSortLabel SortBy="new Func<ServiceStatus, object>(x => x.Name)">Name</MudTableSortLabel></MudTh>
+            <MudTh><MudTableSortLabel SortBy="new Func<ServiceStatus, object>(x => x.IsRunning)">Running</MudTableSortLabel></MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="Name">@Uri.UnescapeDataString(context.Name)</MudTd>
+            <MudTd DataLabel="Running">@context.IsRunning ? "Yes" : "No"</MudTd>
+        </RowTemplate>
+        <PagerContent>
+            <MudTablePager PageSizeOptions="new int[]{ 10, 20, 50, 100 }" />
+        </PagerContent>
+    </MudTable>
+}
+else
+{
+    <MudSkeleton Class="" />
+    <MudSkeleton Class="my-4" SkeletonType="SkeletonType.Circle" Width="50px" Height="50px" />
+    <MudSkeleton Class="" SkeletonType="SkeletonType.Rectangle" Width="200px" Height="110px" />
+}
+
+@code {
+    private bool loaded = false;
+    private string searchString = "";
+    private IEnumerable<ServiceStatus> List { get; set; } = Array.Empty<ServiceStatus>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        Breadcrumbs.SetItems(new BreadcrumbItem("Dashboard", "/", true, Icons.Material.Filled.Dashboard));
+        StateHasChanged();
+
+        // TODO: implement list fetching API.
+        // List = await LoadListAsync();
+    }
+
+    private async Task<IEnumerable<ServiceStatus>> LoadListAsync()
+    {
+        throw new NotImplementedException();
+    }
+
+    private bool FilterFunc(ServiceStatus status) =>
+        string.IsNullOrWhiteSpace(searchString) || status.Name.Contains(searchString, StringComparison.OrdinalIgnoreCase);
+}
