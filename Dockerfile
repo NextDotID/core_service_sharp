@@ -15,16 +15,27 @@ EXPOSE 443
 
 FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build
 WORKDIR /src
+# Dependency
 COPY ["src/CoreService.Shared/CoreService.Shared.csproj", "src/CoreService.Shared/"]
 COPY ["src/CoreService.Api/CoreService.Api.csproj", "src/CoreService.Api/"]
+COPY ["src/CoreService.Web/CoreService.Web.csproj", "src/CoreService.Web/"]
 RUN dotnet restore "src/CoreService.Shared/CoreService.Shared.csproj"
 RUN dotnet restore "src/CoreService.Api/CoreService.Api.csproj"
+RUN dotnet restore "src/CoreService.Web/CoreService.Web.csproj"
+# Build
 COPY . .
 WORKDIR "/src/src/CoreService.Api"
 RUN dotnet build "CoreService.Api.csproj" -c Release -o /app/build
+WORKDIR "/src/src/CoreService.Shared"
+RUN dotnet build "CoreService.Shared.csproj" -c Release -o /app/build
+WORKDIR "/src/src/CoreService.Web"
+RUN dotnet build "CoreService.Web.csproj" -c Release -o /app/build
 
 FROM build AS publish
+WORKDIR "/src/src/CoreService.Api"
 RUN dotnet publish "CoreService.Api.csproj" -c Release -o /app/publish /p:UseAppHost=false
+WORKDIR "/src/src/CoreService.Web"
+RUN dotnet publish "CoreService.Web.csproj" -c Release -o /app/publish /p:UseAppHost=false
 
 FROM base AS final
 WORKDIR /app
