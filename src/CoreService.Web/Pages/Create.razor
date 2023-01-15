@@ -1,12 +1,13 @@
 @page "/create"
 @using System.ComponentModel.DataAnnotations;
 @using CoreService.Shared.Injectors;
+@inject HttpClient httpClient;
+@inject NavigationManager navigationManager;
 
 <PageTitle>New Service | Core Service</PageTitle>
 
-<EditForm EditContext="editContext">
-    <DataAnnotationsValidator />
-    <MudCard>
+<MudCard>
+    <MudCardContent>
         @if (loading)
         {
             <MudSkeleton Class="" />
@@ -15,45 +16,80 @@
         }
         else if (prepared)
         {
-            // TODO: Injection points edit table.
+            if (Injections.Any(p => p is PromptPoint))
+            {
+                <MudTable
+                    Items="@Prompts"
+                    CommitEditTooltip="Commit Edit"
+                    RowEditPreview="BackupItem"
+                    RowEditCancel="RestoreItem"
+                    Hover="@true">
+                    <ToolBarContent>
+                        <MudText Typo="Typo.h6">Service Variables</MudText>
+                    </ToolBarContent>
+                    <ColGroup>
+                        <col style="width:50px;" />
+                        <col />
+                    </ColGroup>
+                    <HeaderContent>
+                        <MudTh>Key</MudTh>
+                        <MudTh>Value</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd DataLabel="Key">@context.Key</MudTd>
+                        <MudTd DataLabel="Value">@context.Value</MudTd>
+                    </RowTemplate>
+                    <RowEditingTemplate>
+                        <MudTd DataLabel="Key">@context.Key</MudTd>
+                        <MudTd DataLabel="Value">
+                            <MudTextField @bind-Value="@context.Value" Required></MudTextField>
+                        </MudTd>
+                    </RowEditingTemplate>
+                </MudTable>
+            }
         }
         else
         {
-            <MudCardContent>
+            <EditForm EditContext="editContext">
+                <DataAnnotationsValidator />
                 <MudTextField Label="Service Name"
-                              @bind-Value="model.Name"
-                              For="@(() => model.Name)">
+                                @bind-Value="model.Name"
+                                For="@(() => model.Name)">
                 </MudTextField>
                 <MudTextField Label="Manifest URL"
-                              @bind-Value="model.Manifest"
-                              For="@(() => model.Manifest)">
+                                @bind-Value="model.Manifest"
+                                For="@(() => model.Manifest)">
                 </MudTextField>
-            </MudCardContent>   
+            </EditForm>
         }
-        <MudCardActions>
-            <MudButton OnClick="@(() => prepared ? Build() : Prepare())"
-                       Variant="Variant.Filled"
-                       Color="Color.Primary"
-                       Class="ml-auto"
-                       StartIcon="@Icons.Material.Filled.Add">
-                @(prepared ? "Create" : "Prepare")
-            </MudButton>
-        </MudCardActions>
-    </MudCard>
-</EditForm>
+    </MudCardContent>
+    <MudCardActions>
+        <MudButton OnClick="@(() => prepared ? Build() : Prepare())"
+                    Disabled="@loading"
+                    Variant="Variant.Filled"
+                    Color="Color.Primary"
+                    Class="ml-auto"
+                    StartIcon="@Icons.Material.Filled.Add">
+            @(prepared ? "Create" : "Prepare")
+        </MudButton>
+    </MudCardActions>
+</MudCard>
+
 
 @code {
     private bool loading = false;
     // After POST /prepare.
     private bool prepared = false;
-    private List<InjectionPoint> Injections { get; set; } = new List<InjectionPoint>();
+    private List<PromptPoint> Injections { get; set; } = new List<PromptPoint>();
+    private List<PromptEntry> Prompts { get; set; } = new List<PromptEntry>();
 
     private CreateServiceForm model = new();
     private EditContext editContext = null!;
+    private PromptEntry entryBeforeEdit = null!;
 
     protected override void OnInitialized()
     {
-        Breadcrumbs.SetItems(new BreadcrumbItem("Create", "/", true, Icons.Material.Filled.Campaign));
+        Breadcrumbs.SetItems(new BreadcrumbItem("Create", "/", true, Icons.Material.Filled.Create));
         editContext = new EditContext(model);
     }
 
@@ -65,13 +101,74 @@
             return;
         }
 
-        prepared = true;
-        throw new NotImplementedException();
+        loading = true;
+        try
+        {
+            using var respMsg = await httpClient.PostAsJsonAsync($"/api/service/{model.Name}/prepare", new PreparePayload(model.Manifest));
+            respMsg.EnsureSuccessStatusCode();
+
+            var result = await respMsg.Content.ReadFromJsonAsync<PrepareResponse>();
+            Injections = result?.Injections.Where(p => p is PromptPoint).Select(p => (p as PromptPoint)!).ToList() ?? Injections;
+            Prompts = Injections.Select(p => new PromptEntry { Key = p.Key, Value = string.Empty }).ToList();
+            prepared = true;
+        }
+        catch (Exception)
+        {
+            Snackbar.Add("Something happened (server-side)...", Severity.Error, options =>
+            {
+                options.Icon = Icons.Material.Filled.WifiTetheringError;
+            });
+        }
+        finally
+        {
+            loading = false;
+        }
     }
 
     private async Task Build()
     {
-        throw new NotImplementedException();
+        if (Prompts.Any(p => string.IsNullOrEmpty(p.Value)))
+        {
+            Snackbar.Add("Invalid input...", Severity.Error, options =>
+            {
+                options.Icon = Icons.Material.Filled.Error;
+            });
+            return;
+        }
+
+        try
+        {
+            using var respMsg = await httpClient.PostAsJsonAsync($"/api/service/{model.Name}/create", new CreatePayload(Prompts.ToDictionary(p => p.Key, p => p.Value)));
+            respMsg.EnsureSuccessStatusCode();
+
+            Snackbar.Add("You've created a new service...", Severity.Success, options =>
+            {
+                options.Icon = Icons.Material.Filled.ElectricalServices;
+            });
+            navigationManager.NavigateTo("/");
+        }
+        catch (Exception)
+        {
+            Snackbar.Add("Something happened (server-side)...", Severity.Error, options =>
+            {
+                options.Icon = Icons.Material.Filled.WifiTetheringError;
+            });
+        }
+    }
+
+    private void BackupItem(object item)
+    {
+        var prompt = (PromptEntry)item;
+        entryBeforeEdit = new()
+        {
+            Key = prompt.Key,
+            Value = prompt.Value,
+        };
+    }
+
+    private void RestoreItem(object item)
+    {
+        ((PromptEntry)item).Value = entryBeforeEdit.Value;
     }
 
     public class CreateServiceForm
@@ -83,5 +180,13 @@
         [Required(ErrorMessage = "Manifest URL is required!")]
         [Url(ErrorMessage = "Manifest URL must be valid!")]
         public string Manifest { get; set; } = string.Empty;
+    }
+
+    public class PromptEntry
+    {
+        public string Key { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Value is required!")]
+        public string Value { get; set; } = string.Empty;
     }
 }

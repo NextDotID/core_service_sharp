@@ -1,0 +1,85 @@
+@inject IDialogService DialogService
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@Icons.Material.Filled.Window" Class="mr-3 mb-n1" />
+            @Title
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        @if (!loading)
+        {
+            <MudText>@ContentText</MudText>
+        }
+        else
+        {
+            <div class="d-flex justify-center flex-grow-1 gap-4">
+                <MudProgressCircular Color="@ActionColor" Indeterminate="true" />
+            </div>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel" Disabled="@loading">Cancel</MudButton>
+        <MudButton Color="@ActionColor" OnClick="@(() => Confirm())" Disabled="@loading">@ActionName</MudButton>
+    </DialogActions>
+</MudDialog>
+
+
+@code {
+    [CascadingParameter]
+    MudDialogInstance? MudDialog { get; set; }
+
+    [Parameter]
+    public string Title { get; set; } = "Confirm?";
+
+    [Parameter]
+    public string ContentText { get; set; } = "Hit Confirm!";
+
+    [Parameter]
+    public Color ActionColor { get; set; } = Color.Primary;
+
+    [Parameter]
+    public string ActionName { get; set; } = "Confirm";
+
+    [Parameter]
+    public Func<Task> ConfirmAction { get; set; } = () => Task.CompletedTask;
+
+    [Parameter]
+    public bool ToDoubleCheck { get; set; } = false;
+
+    private bool loading = false;
+
+    private async Task Confirm()
+    {
+        if (ToDoubleCheck)
+        {
+            // This will cancel all dialogs incl. this.
+            var dialog = DialogService.Show<DoubleCheckDialog>();
+            loading = true;
+            await dialog.Result;
+        }
+
+        loading = true;
+
+        try
+        {
+            // At least wait for 2 seconds.
+            // It is not preserved for later optimization LOL.
+            await Task.WhenAll(ConfirmAction(), Task.Delay(2000));
+        }
+        catch (Exception)
+        {
+            MudDialog?.Cancel();
+            return;
+        }
+        
+        loading = false;
+        MudDialog?.Close(DialogResult.Ok(string.Empty));
+    }
+
+    private void Cancel()
+    {
+        MudDialog?.Cancel();
+    }
+}

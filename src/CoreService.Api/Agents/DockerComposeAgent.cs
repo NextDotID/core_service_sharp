@@ -21,6 +21,18 @@ public class DockerComposeAgent : IAgent
         this.logger = logger;
     }
 
+    public async ValueTask<Result<bool>> IsRunningAsync(string service)
+    {
+        var svcRes = await BuildServiceAsync(service);
+        if (svcRes.IsFailed)
+        {
+            return svcRes.ToResult();
+        }
+
+        using var svc = svcRes.Value;
+        return svc.Services.All(s => s.State == ServiceRunningState.Running);
+    }
+
     public async ValueTask<Result> RemoveAsync(string service)
     {
         var svcRes = await BuildServiceAsync(service);

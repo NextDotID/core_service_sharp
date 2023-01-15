@@ -41,9 +41,16 @@ public class FilePersistence : IPersistence
         return ValueTask.FromResult(Result.Ok());
     }
 
-    public ValueTask<Result<IEnumerable<string>>> ListAsync(string service)
+    public ValueTask<Result<IEnumerable<string>>> ListAsync(string? service = null)
     {
-        if (string.IsNullOrEmpty(service) || !Path.Exists(Path.Combine(rootDirectory, service)))
+        if (string.IsNullOrEmpty(service))
+        {
+            return ValueTask.FromResult(Result.Ok(
+                new DirectoryInfo(rootDirectory).GetDirectories()
+                .Select(d => d.Name)));
+        }
+
+        if (!Path.Exists(Path.Combine(rootDirectory, service)))
         {
             logger.LoadKeyInvalid(service);
             return ValueTask.FromResult(Result.Fail<IEnumerable<string>>("service name is required"));

@@ -8,7 +8,6 @@ using CoreService.Api.Vaults;
 using CoreService.Shared.Injectors;
 using CoreService.Shared.Payloads;
 using FluentResults;
-using FluentResults.Extensions.AspNetCore;
 using Microsoft.AspNetCore.Mvc;
 
 [ApiController]
@@ -38,25 +37,42 @@ public class ServiceController : ControllerBase
         this.logger = logger;
     }
 
+    [HttpGet]
+    public async ValueTask<ActionResult<ServicesResponse>> GetAllAsync()
+    {
+        var list = await persistence.ListAsync();
+        if (list.IsFailed)
+        {
+            return Problem(string.Join(',', list.Errors));
+        }
+
+        var result = new List<ServiceStatus>();
+        foreach (var svc in list.Value)
+        {
+            var running = await agent.IsRunningAsync(svc);
+            result.Add(new ServiceStatus(svc, running.ValueOrDefault));
+        }
+
+        return new ServicesResponse(result);
+    }
+
     [HttpPost("{service}/prepare")]
     public async ValueTask<ActionResult<PrepareResponse>> PrepareAsync(string service, [FromBody] PreparePayload payload)
     {
         var prompts = new List<InjectionPoint>();
-        await using (var ms = new MemoryStream())
+        await using var ms = new MemoryStream();
+        await using (var stream = await httpClient.GetStreamAsync(payload.Source))
         {
-            await using (var stream = await httpClient.GetStreamAsync(payload.Source))
-            {
-                await stream.CopyToAsync(ms);
-            }
+            await stream.CopyToAsync(ms);
+        }
 
-            using var zip = new ZipArchive(ms, ZipArchiveMode.Read);
-            foreach (var entry in zip.Entries)
-            {
-                await using var entryStream = entry.Open();
-                await persistence.WriteAsync(service, entry.FullName, entryStream);
-                var textRes = await persistence.ReadTextAsync(service, entry.FullName);
-                prompts.AddRange(injector.Extract(textRes.Value).ValueOrDefault);
-            }
+        using var zip = new ZipArchive(ms, ZipArchiveMode.Read);
+        foreach (var entry in zip.Entries)
+        {
+            await using var entryStream = entry.Open();
+            await persistence.WriteAsync(service, entry.FullName, entryStream);
+            var textRes = await persistence.ReadTextAsync(service, entry.FullName);
+            prompts.AddRange(injector.Extract(textRes.Value).ValueOrDefault);
         }
 
         return new PrepareResponse(prompts.Distinct());
@@ -71,7 +87,7 @@ public class ServiceController : ControllerBase
 
         if (internals.IsFailed || hostDir.IsFailed || files.IsFailed)
         {
-            return Result.Merge(internals, hostDir, files).ToActionResult();
+            return Problem(string.Join(',', Result.Merge(internals, hostDir, files).Errors));
         }
 
         foreach (var filename in files.Value)

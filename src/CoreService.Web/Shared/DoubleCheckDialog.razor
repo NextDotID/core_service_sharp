@@ -1,0 +1,33 @@
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@Icons.Material.Filled.LayersClear" Class="mr-3 mb-n1" />
+            Overwrite existing?
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        @DoubleCheckText
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Error" OnClick="Confirm">Confirm</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    MudDialogInstance? MudDialog { get; set; }
+
+    [Parameter]
+    public string DoubleCheckText { get; set; } = "Please confirm it.";
+
+    private void Confirm()
+    {
+        MudDialog?.Close(DialogResult.Ok(string.Empty));
+    }
+
+    private void Cancel()
+    {
+        MudDialog?.CancelAll();
+    }
+}

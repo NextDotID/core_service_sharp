@@ -15,7 +15,7 @@ public interface IPersistence
 
     ValueTask<Result> DeleteAsync(string service, string? filename = null);
 
-    ValueTask<Result<IEnumerable<string>>> ListAsync(string service);
+    ValueTask<Result<IEnumerable<string>>> ListAsync(string? service = null);
 
     ValueTask<Result<string>> GetPathAsync(string service, string? filename = null);
 

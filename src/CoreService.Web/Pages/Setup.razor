@@ -1,0 +1,100 @@
+@page "/setup"
+@using System.ComponentModel.DataAnnotations;
+@using CoreService.Shared.Internals;
+@inject HttpClient httpClient
+@inject NavigationManager navigationManager
+
+<PageTitle>Setup | Core Service</PageTitle>
+
+<EditForm EditContext="editContext">
+    <DataAnnotationsValidator />
+    <MudCard>
+        <MudCardContent>
+            <MudTextField Label="Avatar Public Key"
+                          @bind-Value="model.AvatarPublicKey"
+                          For="@(() => model.AvatarPublicKey)">
+            </MudTextField>
+            <MudTextField Label="Subkey Private Key"
+                            @bind-Value="model.SubkeyPrivateKey"
+                            For="@(() => model.SubkeyPrivateKey)">
+            </MudTextField>
+            <MudTextField Label="Subkey Signature"
+                            @bind-Value="model.SubkeySignature"
+                            For="@(() => model.SubkeySignature)">
+            </MudTextField>
+            <MudTextField Label="Host Domain"
+                          @bind-Value="model.HostDomain"
+                          For="@(() => model.HostDomain)"
+                          Placeholder="@(new Uri(navigationManager.Uri).Host)">
+            </MudTextField>
+        </MudCardContent>
+        <MudCardActions>
+            <MudButton OnClick="Confirm"
+                       Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       Class="ml-auto"
+                       StartIcon="@Icons.Material.Filled.Send">
+                Confirm
+            </MudButton>
+        </MudCardActions>
+    </MudCard>
+</EditForm>
+
+@code {
+    private SetupForm model = new();
+    private EditContext editContext = null!;
+
+    protected override void OnInitialized()
+    {
+        Breadcrumbs.SetItems(new BreadcrumbItem("Setup", "/", true, Icons.Material.Outlined.Lightbulb));
+        editContext = new EditContext(model);
+    }
+
+    private async Task Confirm()
+    {
+        if (!editContext.Validate())
+        {
+            StateHasChanged();
+            return;
+        }
+
+        try
+        {
+            using var response = await httpClient.PostAsJsonAsync("/api/core/setup", new Internal(
+                new Subkey(model.SubkeyPrivateKey, string.Empty, model.AvatarPublicKey, model.SubkeySignature),
+                new Host(model.HostDomain)
+            ));
+            response.EnsureSuccessStatusCode();
+        }
+        catch (Exception)
+        {
+            Snackbar.Add("Something happened (server-side)...", Severity.Error, options =>
+            {
+                options.Icon = Icons.Material.Filled.WifiTetheringError;
+            });
+
+            return;
+        }
+
+        navigationManager.NavigateTo("/");
+    }
+
+    public class SetupForm
+    {
+        [Required(ErrorMessage = "Subkey private key is required!")]
+        [StringLength(200, MinimumLength = 1, ErrorMessage = "Subkey private key must be at least 1 character long!")]
+        public string SubkeyPrivateKey { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Avatar public key is required!")]
+        [StringLength(200, MinimumLength = 1, ErrorMessage = "Avatar public key must be at least 1 character long!")]
+        public string AvatarPublicKey { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Subkey signature is required!")]
+        [StringLength(200, MinimumLength = 1, ErrorMessage = "Subkey signature must be at least 1 character long!")]
+        public string SubkeySignature { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Host domain is required!")]
+        [StringLength(200, MinimumLength = 1, ErrorMessage = "Host domain must be at least 1 character long!")]
+        public string HostDomain { get; set; } = string.Empty;
+    }
+}

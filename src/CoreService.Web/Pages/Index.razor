@@ -1,4 +1,6 @@
 @page "/"
+@inject HttpClient httpClient
+@inject NavigationManager navigationManager
 
 <PageTitle>Dashboard | Core Service</PageTitle>
 
@@ -17,10 +19,33 @@
         <HeaderContent>
             <MudTh><MudTableSortLabel SortBy="new Func<ServiceStatus, object>(x => x.Name)">Name</MudTableSortLabel></MudTh>
             <MudTh><MudTableSortLabel SortBy="new Func<ServiceStatus, object>(x => x.IsRunning)">Running</MudTableSortLabel></MudTh>
+            <MudTh>Actions</MudTh>
         </HeaderContent>
         <RowTemplate>
             <MudTd DataLabel="Name">@Uri.UnescapeDataString(context.Name)</MudTd>
-            <MudTd DataLabel="Running">@context.IsRunning ? "Yes" : "No"</MudTd>
+            <MudTd DataLabel="Running">@(context.IsRunning ? "Yes" : "No")</MudTd>
+            <MudTd DataLabel="Actions">
+                <MudButtonGroup Variant="Variant.Outlined">
+                        <MudToggleIconButton
+                            Icon="@Icons.Material.Filled.Stop"
+                            Color="Color.Warning"
+                            ToggledIcon="@Icons.Material.Filled.Start"
+                            ToggledColor="@Color.Success"
+                            Toggled="@context.IsRunning"
+                            ToggledChanged="@(() => ToggleService(context))">
+                        </MudToggleIconButton>
+                        <MudIconButton
+                            Icon="@Icons.Material.Filled.Delete"
+                            Color="Color.Error"
+                            OnClick="@(() => RemoveService(context))">
+                        </MudIconButton>
+                        <MudIconButton
+                            Icon="@Icons.Material.Filled.QueryStats"
+                            Color="Color.Info"
+                            OnClick="@(() => navigationManager.NavigateTo("/todo/service-stats"))">
+                        </MudIconButton>
+                </MudButtonGroup>
+            </MudTd>
         </RowTemplate>
         <PagerContent>
             <MudTablePager PageSizeOptions="new int[]{ 10, 20, 50, 100 }" />
@@ -44,13 +69,61 @@ else
         Breadcrumbs.SetItems(new BreadcrumbItem("Dashboard", "/", true, Icons.Material.Filled.Dashboard));
         StateHasChanged();
 
-        // TODO: implement list fetching API.
-        // List = await LoadListAsync();
+        if (!await CheckSetupAsync())
+        {
+            navigationManager.NavigateTo("/setup");
+            return;
+        }
+
+        await LoadListAsync();
     }
 
-    private async Task<IEnumerable<ServiceStatus>> LoadListAsync()
+    private async Task<bool> CheckSetupAsync()
     {
-        throw new NotImplementedException();
+        try
+        {
+            var response = await httpClient.GetFromJsonAsync<InitStatus>("/api/core/status");
+            Console.WriteLine(response);
+            return response?.IsInitialized ?? false;
+        }
+        catch (Exception)
+        {
+            Snackbar.Add("Something happened (server-side)...", Severity.Error, options =>
+            {
+                options.Icon = Icons.Material.Filled.WifiTetheringError;
+            });
+        }
+
+        return false;
+    }
+
+    private async Task LoadListAsync()
+    {
+        try
+        {
+            var response = await httpClient.GetFromJsonAsync<ServicesResponse>("/api/service");
+            List = response?.Services ?? Array.Empty<ServiceStatus>();
+            loaded = true;
+        }
+        catch (Exception)
+        {
+            Snackbar.Add("Something happened (server-side)...", Severity.Error, options =>
+            {
+                options.Icon = Icons.Material.Filled.WifiTetheringError;
+            });
+        }
+    }
+
+    private async Task ToggleService(ServiceStatus service)
+    {
+        // Refresh.
+        await LoadListAsync();
+    }
+
+    private async Task RemoveService(ServiceStatus service)
+    {
+        // Refresh.
+        await LoadListAsync();
     }
 
     private bool FilterFunc(ServiceStatus status) =>

@@ -11,12 +11,12 @@ using Nethereum.Signer;
 
 [ApiController]
 [Route("api/[controller]")]
-public class InitController : ControllerBase
+public class CoreController : ControllerBase
 {
     private readonly IVault vault;
     private readonly ILogger logger;
 
-    public InitController(IVault vault, ILogger<InitController> logger)
+    public CoreController(IVault vault, ILogger<CoreController> logger)
     {
         this.vault = vault;
         this.logger = logger;

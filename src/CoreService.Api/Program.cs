@@ -1,4 +1,3 @@
-using Chubrik.Json;
 using CoreService.Api.Agents;
 using CoreService.Api.Injectors;
 using CoreService.Api.Persistences;
@@ -8,8 +7,10 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services
     .Configure<RouteOptions>(options => options.LowercaseUrls = true)
-    .AddControllers()
-    .AddJsonOptions(options => options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicies.SnakeLowerCase);
+    .AddControllersWithViews()
+    .AddJsonOptions(options => options.JsonSerializerOptions.PropertyNamingPolicy = null);
+
+builder.Services.AddRazorPages();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -25,14 +26,20 @@ var app = builder.Build();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseWebAssemblyDebugging();
 }
 
 app.UseHttpsRedirection();
 
 app.UseAuthorization();
 
+app.UseBlazorFrameworkFiles();
+app.UseStaticFiles();
+
+app.UseRouting();
+
+app.MapRazorPages();
 app.MapControllers();
+app.MapFallbackToFile("index.html");
 
 app.Run();
