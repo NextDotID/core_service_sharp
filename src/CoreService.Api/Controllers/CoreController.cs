@@ -26,14 +26,51 @@ public class CoreController : ControllerBase
     public async ValueTask<ActionResult<InitStatus>> GetStatusAsync()
     {
         var res = await vault.LoadInternalAsync();
-        return new InitStatus(res.IsSuccess);
+        return new InitStatus(
+            res.IsSuccess && !string.IsNullOrEmpty(res.Value.Subkey.Signature),
+            res.ValueOrDefault?.Subkey?.Public ?? string.Empty);
+    }
+
+    [HttpPost("generate")]
+    public async ValueTask<ActionResult<InitStatus>> GenerateAsync()
+    {
+        var load = await vault.LoadInternalAsync();
+        if (load.IsSuccess && !string.IsNullOrEmpty(load.Value.Subkey.Signature))
+        {
+            return Problem("already setup");
+        }
+
+        var internals = load.ValueOrDefault ?? new Internal(
+            new Subkey(
+                    string.Empty,
+                    string.Empty,
+                    string.Empty,
+                    string.Empty),
+            new Host(string.Empty));
+        var eckey = EthECKey.GenerateKey();
+        internals = internals with
+        {
+            Subkey = new(
+                eckey.GetPrivateKey(),
+                eckey.GetPubKey(true).ToHex(true),
+                string.Empty,
+                string.Empty),
+        };
+
+        var save = await vault.SaveInternalAsync(internals);
+        if (save.IsFailed)
+        {
+            return Problem(save.Errors.First().Message);
+        }
+
+        return new InitStatus(false, internals.Subkey.Public);
     }
 
     [HttpPost("setup")]
     public async ValueTask<ActionResult> SetupAsync(Internal setup)
     {
-        var loadRes = await vault.LoadInternalAsync();
-        if (loadRes.IsSuccess)
+        var load = await vault.LoadInternalAsync();
+        if (load.IsSuccess && !string.IsNullOrEmpty(load.Value.Subkey.Signature))
         {
             return Problem("already setup");
         }
@@ -43,7 +80,10 @@ public class CoreController : ControllerBase
             return Problem("invalid domain");
         }
 
-        var validate = ExtractPublicKey(setup.Subkey.Private, setup.Subkey.Avatar, setup.Subkey.Signature);
+        var privKey = string.IsNullOrEmpty(load.ValueOrDefault?.Subkey?.Private)
+            ? setup.Subkey.Private
+            : load.Value.Subkey.Private;
+        var validate = ExtractPublicKey(privKey, setup.Subkey.Avatar, setup.Subkey.Signature);
         if (validate.IsFailed)
         {
             return Problem(string.Join('\n', validate.Reasons.Select(r => r.Message)));
@@ -51,7 +91,11 @@ public class CoreController : ControllerBase
 
         var internals = setup with
         {
-            Subkey = setup.Subkey with { Public = validate.Value },
+            Subkey = setup.Subkey with
+            {
+                Private = privKey,
+                Public = validate.Value,
+            },
         };
 
         var res = await vault.SaveInternalAsync(internals);

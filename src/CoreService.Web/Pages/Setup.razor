@@ -1,68 +1,98 @@
 @page "/setup"
 @using System.ComponentModel.DataAnnotations;
 @using CoreService.Shared.Internals;
+@using Nethereum.Hex.HexConvertors.Extensions;
+@using Nethereum.Signer;
+@using Nethereum.UI;
+@using System.Text;
 @inject HttpClient httpClient
 @inject NavigationManager navigationManager
+@inject SelectedEthereumHostProviderService selectedHostProviderService
 
 <PageTitle>Setup | Core Service</PageTitle>
 
-<EditForm EditContext="editContext">
-    <DataAnnotationsValidator />
-    <MudCard>
-        <MudCardContent>
-            <MudTextField Label="Avatar Public Key"
-                          @bind-Value="model.AvatarPublicKey"
-                          For="@(() => model.AvatarPublicKey)">
-            </MudTextField>
-            <MudTextField Label="Subkey Private Key"
-                            @bind-Value="model.SubkeyPrivateKey"
-                            For="@(() => model.SubkeyPrivateKey)">
-            </MudTextField>
-            <MudTextField Label="Subkey Signature"
-                            @bind-Value="model.SubkeySignature"
-                            For="@(() => model.SubkeySignature)">
-            </MudTextField>
-            <MudTextField Label="Host Domain"
-                          @bind-Value="model.HostDomain"
-                          For="@(() => model.HostDomain)"
-                          Placeholder="@(new Uri(navigationManager.Uri).Host)">
-            </MudTextField>
-        </MudCardContent>
-        <MudCardActions>
-            <MudButton OnClick="Confirm"
-                       Variant="Variant.Filled"
-                       Color="Color.Primary"
-                       Class="ml-auto"
-                       StartIcon="@Icons.Material.Filled.Send">
-                Confirm
-            </MudButton>
-        </MudCardActions>
-    </MudCard>
-</EditForm>
+<MudCard>
+    <MudCardContent>
+        <MudText Typo="Typo.h4">
+            Setup
+        </MudText>
+    </MudCardContent>
+    <MudCardActions>
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   StartIcon="@CustomIcons.Metamask"
+                   OnClick="Connect">
+            Connect
+        </MudButton>
+    </MudCardActions>
+</MudCard>
 
 @code {
-    private SetupForm model = new();
-    private EditContext editContext = null!;
+    private IEthereumHostProvider eth = null!;
+    private string SelectedAccount { get; set; } = null!;
 
     protected override void OnInitialized()
     {
         Breadcrumbs.SetItems(new BreadcrumbItem("Setup", "/", true, Icons.Material.Outlined.Lightbulb));
-        editContext = new EditContext(model);
+        eth = selectedHostProviderService.SelectedHost;
     }
 
-    private async Task Confirm()
+    protected override async Task OnInitializedAsync()
     {
-        if (!editContext.Validate())
+        await eth.CheckProviderAvailabilityAsync();
+    }
+
+    private async Task Connect()
+    {
+        string subPub;
+
+        try
         {
-            StateHasChanged();
+            using var response = await httpClient.PostAsync("/api/core/generate", null);
+            response.EnsureSuccessStatusCode();
+            var status = await response.Content.ReadFromJsonAsync<InitStatus>();
+            subPub = status?.SubkeyPublic ?? string.Empty;
+        }
+        catch (Exception)
+        {
+            Snackbar.Add("Something happened (server-side)...", Severity.Error, options =>
+            {
+                options.Icon = Icons.Material.Filled.WifiTetheringError;
+            });
+
             return;
         }
+
+        var message = $"Subkey certification signature: {subPub}";
+        string account, sig;
+
+        try
+        {
+            account = await eth.GetProviderSelectedAccountAsync();
+            sig = await eth.SignMessageAsync(message);
+        }
+        catch (Exception)
+        {
+            Snackbar.Add("Metamask not working...", Severity.Error, options =>
+            {
+                options.Icon = Icons.Material.Filled.WifiTetheringError;
+            });
+
+            return;
+        }
+
+        var signer = new EthereumMessageSigner();
+        var avatar = EthECKey.RecoverFromSignature(
+            MessageSigner.ExtractEcdsaSignature(sig),
+            signer.HashPrefixedMessage(Encoding.UTF8.GetBytes(message)))
+        .GetPubKey(true)
+        .ToHex(true);
 
         try
         {
             using var response = await httpClient.PostAsJsonAsync("/api/core/setup", new Internal(
-                new Subkey(model.SubkeyPrivateKey, string.Empty, model.AvatarPublicKey, model.SubkeySignature),
-                new Host(model.HostDomain)
+                new Subkey(string.Empty, string.Empty, avatar, sig),
+                new Host(new Uri(navigationManager.Uri).Host)
             ));
             response.EnsureSuccessStatusCode();
         }
@@ -77,24 +107,5 @@
         }
 
         navigationManager.NavigateTo("/");
-    }
-
-    public class SetupForm
-    {
-        [Required(ErrorMessage = "Subkey private key is required!")]
-        [StringLength(200, MinimumLength = 1, ErrorMessage = "Subkey private key must be at least 1 character long!")]
-        public string SubkeyPrivateKey { get; set; } = string.Empty;
-
-        [Required(ErrorMessage = "Avatar public key is required!")]
-        [StringLength(200, MinimumLength = 1, ErrorMessage = "Avatar public key must be at least 1 character long!")]
-        public string AvatarPublicKey { get; set; } = string.Empty;
-
-        [Required(ErrorMessage = "Subkey signature is required!")]
-        [StringLength(200, MinimumLength = 1, ErrorMessage = "Subkey signature must be at least 1 character long!")]
-        public string SubkeySignature { get; set; } = string.Empty;
-
-        [Required(ErrorMessage = "Host domain is required!")]
-        [StringLength(200, MinimumLength = 1, ErrorMessage = "Host domain must be at least 1 character long!")]
-        public string HostDomain { get; set; } = string.Empty;
     }
 }
