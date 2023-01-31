@@ -9,15 +9,17 @@ services:
     networks:
     - core_service
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
     # This should be ABSOLUTE path to persistence directory on HOST
-    - PERSISTENCE_HOST=/path/to/persistence
-    - PERSISTENCE_ROOT=/app/persistence/
+    - PERSISTENCE__HOST=${PERSISTENCE__HOST}
+    - PERSISTENCE__ROOT=/app/persistence/
     volumes:
     - "/var/run/docker.sock:/var/run/docker.sock:ro"
-    - "./persistence/:/app/persistence/"
+    - "${PERSISTENCE__HOST}:/app/persistence/"
     labels:
-    - "traefik.http.routers.core_service.rule=PathPrefix(`/api/`)"
+    - "traefik.http.routers.core_service.rule=PathPrefix(`/`)"
 
   traefik:
     container_name: traefik
