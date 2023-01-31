@@ -3,9 +3,6 @@ version: "3"
 services:
   core_service:
     image: ghcr.io/nextdotid/core_service_sharp:main
-    build:
-      context: ./
-      dockerfile: ./Dockerfile
     networks:
     - core_service
     restart: unless-stopped
