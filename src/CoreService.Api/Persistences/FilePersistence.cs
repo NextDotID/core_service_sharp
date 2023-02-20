@@ -106,13 +106,14 @@ public class FilePersistence : IPersistence
 
     public async ValueTask<Result> WriteAsync(string service, string filename, Stream data, bool leaveOpen = false)
     {
-        var dirPath = Path.Combine(rootDirectory, service);
-        if (!Path.Exists(dirPath))
+        var filePath = Path.Combine(rootDirectory, service, filename);
+        var dirPath = Path.GetDirectoryName(filePath);
+
+        if (!string.IsNullOrEmpty(dirPath) && !Path.Exists(dirPath))
         {
             Directory.CreateDirectory(dirPath);
         }
 
-        var filePath = Path.Combine(rootDirectory, service, filename);
         try
         {
             await using var fileStream = File.Open(filePath, FileMode.OpenOrCreate);

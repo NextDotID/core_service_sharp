@@ -83,11 +83,19 @@ public class ServiceController : ControllerBase
         }
 
         using var zip = new ZipArchive(ms, ZipArchiveMode.Read);
-        foreach (var entry in zip.Entries)
+
+        // Junk path.
+        var parent = zip.Entries.FirstOrDefault()?.FullName;
+        var junkParent = !string.IsNullOrEmpty(parent)
+                && Path.EndsInDirectorySeparator(parent)
+                && zip.Entries.All(e => e.FullName.StartsWith(parent, StringComparison.OrdinalIgnoreCase));
+
+        foreach (var entry in zip.Entries.Where(e => !Path.EndsInDirectorySeparator(e.FullName)))
         {
             await using var entryStream = entry.Open();
-            await persistence.WriteAsync(service, entry.FullName, entryStream);
-            var textRes = await persistence.ReadTextAsync(service, entry.FullName);
+            var filename = junkParent ? entry.FullName[(parent?.Length ?? 0)..] : entry.FullName;
+            await persistence.WriteAsync(service, filename, entryStream);
+            var textRes = await persistence.ReadTextAsync(service, filename);
             prompts.AddRange(injector.Extract(textRes.Value).ValueOrDefault);
         }
 
