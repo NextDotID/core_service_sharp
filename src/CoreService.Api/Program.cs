@@ -1,3 +1,4 @@
+using System.Reflection;
 using CoreService.Api.Agents;
 using CoreService.Api.Injectors;
 using CoreService.Api.Persistences;
@@ -13,7 +14,11 @@ builder.Services
 builder.Services.AddRazorPages();
 
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    var xmlFilename = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, xmlFilename));
+});
 builder.Services.AddHttpClient();
 
 builder.Services.AddPersistence();
@@ -26,6 +31,8 @@ var app = builder.Build();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
+    app.UseSwagger();
+    app.UseSwaggerUI();
     app.UseWebAssemblyDebugging();
 }
 

@@ -37,7 +37,12 @@ public class ServiceController : ControllerBase
         this.logger = logger;
     }
 
-    [HttpGet]
+    /// <summary>
+    ///     Get a list of all services managed by CoreService.
+    /// </summary>
+    /// <returns>A services list.</returns>
+    /// <response code="200"></response>
+    [HttpGet(Name = "Get all services")]
     public async ValueTask<ActionResult<ServicesResponse>> GetAllAsync()
     {
         var list = await persistence.ListAsync();
@@ -56,7 +61,18 @@ public class ServiceController : ControllerBase
         return new ServicesResponse(result);
     }
 
-    [HttpPost("{service}/prepare")]
+    /// <summary>
+    ///     Prepare a service creation.
+    /// </summary>
+    /// <param name="service">Service name.</param>
+    /// <param name="payload">Manifest URL.</param>
+    /// <returns>A list of injection points to be filled.</returns>
+    /// <remarks>
+    ///     In the response of this API, there are 3 **types** of injection points.
+    ///     The user only needs to input `PromptPoint` only.
+    /// </remarks>
+    /// <response code="200">If prepared.</response>
+    [HttpPost("{service}/prepare", Name = "Prepare a service")]
     public async ValueTask<ActionResult<PrepareResponse>> PrepareAsync(string service, [FromBody] PreparePayload payload)
     {
         var prompts = new List<InjectionPoint>();
@@ -78,7 +94,15 @@ public class ServiceController : ControllerBase
         return new PrepareResponse(prompts.Distinct());
     }
 
-    [HttpPost("{service}/create")]
+    /// <summary>
+    ///     Create the service with the given prompts.
+    /// </summary>
+    /// <param name="service">Service name.</param>
+    /// <param name="payload">Prompt values and other configuration.</param>
+    /// <returns>Ok.</returns>
+    /// <response code="200">If created.</response>
+    /// <response code="400">If some injection points are still presented.</response>
+    [HttpPost("{service}/create", Name = "Create and start a service")]
     public async ValueTask<ActionResult> CreateAsync(string service, [FromBody] CreatePayload payload)
     {
         var internals = await vault.LoadInternalAsync();

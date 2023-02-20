@@ -22,7 +22,15 @@ public class CoreController : ControllerBase
         this.logger = logger;
     }
 
-    [HttpGet("status")]
+    /// <summary>
+    ///     Get initialization status and health status of CoreService.
+    /// </summary>
+    /// <returns>InitStatus.</returns>
+    /// <remarks>
+    ///     The `SubkeyPublic` is in Hex format.
+    /// </remarks>
+    /// <response code="200">Initialized or not, and if initialized, returns the public key of its subkey.</response>
+    [HttpGet("status", Name = "Get initialization status")]
     public async ValueTask<ActionResult<InitStatus>> GetStatusAsync()
     {
         var res = await vault.LoadInternalAsync();
@@ -31,7 +39,20 @@ public class CoreController : ControllerBase
             res.ValueOrDefault?.Subkey?.Public ?? string.Empty);
     }
 
-    [HttpPost("generate")]
+    /// <summary>
+    ///     Generate a key pair as subkey which is to be signed by the Avatar.
+    ///     This is the pre-setup step.
+    /// </summary>
+    /// <returns>InitStatus.</returns>
+    /// <remarks>
+    ///     The `SubkeyPublic` is in Hex format.
+    ///     To sign the public key using the Avatar, the signature **MUST** be `eth_sign`ed with
+    ///     `Subkey certification signature: ${subkey_public_key_hex}`.
+    /// </remarks>
+    /// <response code="200">Returns the public key to be signed.</response>
+    /// <response code="400">Already setup.</response>
+    /// <response code="500">Error when generating the signature.</response>
+    [HttpPost("generate", Name = "Generate subkey keypair")]
     public async ValueTask<ActionResult<InitStatus>> GenerateAsync()
     {
         var load = await vault.LoadInternalAsync();
@@ -60,12 +81,24 @@ public class CoreController : ControllerBase
         var save = await vault.SaveInternalAsync(internals);
         if (save.IsFailed)
         {
-            return Problem(save.Errors.First().Message);
+            return Problem(save.Errors.First().Message, null, StatusCodes.Status500InternalServerError);
         }
 
         return new InitStatus(false, internals.Subkey.Public);
     }
 
+    /// <summary>
+    ///     Sending the subkey certification signature (by the Avatar) to the backend
+    ///     to complete the initialization process.
+    /// </summary>
+    /// <param name="setup">The configuration.</param>
+    /// <returns>Ok.</returns>
+    /// <remarks>
+    ///     `HOST:DOMAIN` should be the domain name of CoreService, e.g. `localhost`.
+    /// </remarks>
+    /// <response code="200">If setup correctly.</response>
+    /// <response code="400">Invalid signature.</response>
+    /// <response code="500">Error when saving the configuration.</response>
     [HttpPost("setup")]
     public async ValueTask<ActionResult> SetupAsync(Internal setup)
     {
@@ -99,7 +132,7 @@ public class CoreController : ControllerBase
         };
 
         var res = await vault.SaveInternalAsync(internals);
-        return res.IsSuccess ? Ok() : Problem("failed to init");
+        return res.IsSuccess ? Ok() : Problem("failed to init", null, StatusCodes.Status500InternalServerError);
     }
 
     private static Result<string> ExtractPublicKey(string privKey, string avatar, string signature)
