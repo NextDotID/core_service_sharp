@@ -16,6 +16,7 @@
 
   <ItemGroup>
     <PackageReference Include="Chubrik.Json" Version="1.0.0" />
+    <PackageReference Include="CliWrap" Version="3.6.0" />
     <PackageReference Include="Ductus.FluentDocker" Version="2.10.59" />
     <PackageReference Include="FluentResults" Version="3.15.1" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="7.0.2" />

@@ -4,11 +4,11 @@ using FluentResults;
 
 public interface IAgent
 {
-    ValueTask<Result> StartAsync(string service);
+    ValueTask<Result> UpAsync(string service);
 
     ValueTask<Result> StopAsync(string service);
 
-    ValueTask<Result> RemoveAsync(string service);
+    ValueTask<Result> DownAsync(string service);
 
     ValueTask<Result<bool>> IsRunningAsync(string service);
 }

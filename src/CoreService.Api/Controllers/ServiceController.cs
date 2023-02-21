@@ -114,7 +114,7 @@ public class ServiceController : ControllerBase
     public async ValueTask<ActionResult> CreateAsync(string service, [FromBody] CreatePayload payload)
     {
         var internals = await vault.LoadInternalAsync();
-        var hostDir = await persistence.GetAbsolutePathAsync(service);
+        var hostDir = await persistence.GetPathAsync(service);
         var files = await persistence.ListAsync(service);
 
         if (internals.IsFailed || hostDir.IsFailed || files.IsFailed)
@@ -140,7 +140,7 @@ public class ServiceController : ControllerBase
             }
         }
 
-        await agent.StartAsync(service);
+        await agent.UpAsync(service);
         return Ok();
     }
 }

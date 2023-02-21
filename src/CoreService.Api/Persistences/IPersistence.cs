@@ -19,8 +19,6 @@ public interface IPersistence
 
     ValueTask<Result<string>> GetPathAsync(string service, string? filename = null);
 
-    ValueTask<Result<string>> GetAbsolutePathAsync(string service, string? filename = null);
-
     ValueTask<Result> WriteBytesAsync(string service, string filename, Span<byte> data)
     {
         using var stream = new MemoryStream(data.ToArray());

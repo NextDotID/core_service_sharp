@@ -7,7 +7,7 @@ public static class PersistenceExtensions
         {
             var config = provider.GetRequiredService<IConfiguration>();
             var logger = provider.GetRequiredService<ILogger<FilePersistence>>();
-            return new FilePersistence(config["Persistence:Root"]!, config["Persistence:Host"]!, logger);
+            return new FilePersistence(config["Persistence:Root"]!, logger);
         });
     }
 }

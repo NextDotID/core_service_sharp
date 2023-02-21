@@ -1,15 +1,12 @@
 namespace CoreService.Api.Agents;
 
 using System.Threading.Tasks;
+using CliWrap;
 using CoreService.Api.Persistences;
-using Ductus.FluentDocker.Builders;
-using Ductus.FluentDocker.Services;
 using FluentResults;
 
 public class DockerComposeAgent : IAgent
 {
-    private const string ComposeFile = "docker-compose.yml";
-
     private readonly IPersistence persistence;
     private readonly ILogger logger;
 
@@ -23,70 +20,40 @@ public class DockerComposeAgent : IAgent
 
     public async ValueTask<Result<bool>> IsRunningAsync(string service)
     {
-        var svcRes = await BuildServiceAsync(service);
-        if (svcRes.IsFailed)
-        {
-            return svcRes.ToResult();
-        }
-
-        using var svc = svcRes.Value;
-        return svc.Services.All(s => s.State == ServiceRunningState.Running);
+        var cmd = await BuildCommandAsync(service);
+        await cmd.Value.WithArguments("inspect").ExecuteAsync();
+        return Result.Ok(true);
     }
 
-    public async ValueTask<Result> RemoveAsync(string service)
+    public async ValueTask<Result> DownAsync(string service)
     {
-        var svcRes = await BuildServiceAsync(service);
-        if (svcRes.IsFailed)
-        {
-            return svcRes.ToResult();
-        }
-
-        using var svc = svcRes.Value;
-        svc.Remove(true);
+        var cmd = await BuildCommandAsync(service);
+        await cmd.Value.WithArguments("down --remove-orphans").ExecuteAsync();
         return Result.Ok();
     }
 
-    public async ValueTask<Result> StartAsync(string service)
+    public async ValueTask<Result> UpAsync(string service)
     {
-        var svcRes = await BuildServiceAsync(service);
-        if (svcRes.IsFailed)
-        {
-            return svcRes.ToResult();
-        }
-
-        using var svc = svcRes.Value;
-        svc.Start();
+        var cmd = await BuildCommandAsync(service);
+        await cmd.Value.WithArguments("up -d").ExecuteAsync();
         return Result.Ok();
     }
 
     public async ValueTask<Result> StopAsync(string service)
     {
-        var svcRes = await BuildServiceAsync(service);
-        if (svcRes.IsFailed)
-        {
-            return svcRes.ToResult();
-        }
-
-        using var svc = svcRes.Value;
-        svc.Stop();
+        var cmd = await BuildCommandAsync(service);
+        await cmd.Value.WithArguments("stop").ExecuteAsync();
         return Result.Ok();
     }
 
-    private async ValueTask<Result<ICompositeService>> BuildServiceAsync(string service)
+    private async ValueTask<Result<Command>> BuildCommandAsync(string service)
     {
-        var pathRes = await persistence.GetPathAsync(service, ComposeFile);
-        if (pathRes.IsFailed)
-        {
-            return pathRes.ToResult();
-        }
+        var path = await persistence.GetPathAsync(service);
 
-        var path = pathRes.Value;
-        return new Builder()
-            .UseContainer()
-            .UseCompose()
-            .FromFile(path)
-            .KeepRunning()
-            .Build()
-            .ToResult();
+        return path switch
+        {
+            { IsSuccess: true } => Cli.Wrap("docker-compose").WithWorkingDirectory(service).ToResult(),
+            _ => path.ToResult(),
+        };
     }
 }

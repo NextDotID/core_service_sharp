@@ -8,13 +8,11 @@ using FluentResults;
 public class FilePersistence : IPersistence
 {
     private readonly string rootDirectory;
-    private readonly string hostDirectory;
     private readonly ILogger logger;
 
-    public FilePersistence(string rootDirectory, string hostDirectory, ILogger<FilePersistence> logger)
+    public FilePersistence(string rootDirectory, ILogger<FilePersistence> logger)
     {
         this.rootDirectory = rootDirectory;
-        this.hostDirectory = hostDirectory;
         this.logger = logger;
     }
 
@@ -22,7 +20,7 @@ public class FilePersistence : IPersistence
     {
         if (string.IsNullOrEmpty(service) || !Path.Exists(Path.Combine(rootDirectory, service)))
         {
-            logger.LoadKeyInvalid(service);
+            logger.PersistenceFileNotFound(service);
             return ValueTask.FromResult(Result.Fail("service name is required"));
         }
 
@@ -52,7 +50,7 @@ public class FilePersistence : IPersistence
 
         if (!Path.Exists(Path.Combine(rootDirectory, service)))
         {
-            logger.LoadKeyInvalid(service);
+            logger.PersistenceFileNotFound(service);
             return ValueTask.FromResult(Result.Fail<IEnumerable<string>>("service name is required"));
         }
 
@@ -67,25 +65,11 @@ public class FilePersistence : IPersistence
     {
         if (string.IsNullOrEmpty(service) || !Path.Exists(Path.Combine(rootDirectory, service)))
         {
-            logger.LoadKeyInvalid(service);
+            logger.PersistenceFileNotFound(service);
             return ValueTask.FromResult(Result.Fail<string>("service name is required"));
         }
 
         var path = new string[] { rootDirectory, service, filename! }
-            .Where(x => !string.IsNullOrEmpty(x))
-            .ToArray();
-        return ValueTask.FromResult(Result.Ok(Path.Combine(path)));
-    }
-
-    public ValueTask<Result<string>> GetAbsolutePathAsync(string service, string? filename = null)
-    {
-        if (string.IsNullOrEmpty(service) || !Path.Exists(Path.Combine(rootDirectory, service)))
-        {
-            logger.LoadKeyInvalid(service);
-            return ValueTask.FromResult(Result.Fail<string>("service name is required"));
-        }
-
-        var path = new string[] { hostDirectory, service, filename! }
             .Where(x => !string.IsNullOrEmpty(x))
             .ToArray();
         return ValueTask.FromResult(Result.Ok(Path.Combine(path)));
@@ -96,7 +80,7 @@ public class FilePersistence : IPersistence
         var path = Path.Combine(rootDirectory, service, filename);
         if (!Path.Exists(path))
         {
-            logger.LoadKeyFileNotFound(path);
+            logger.PersistenceFileNotFound(path);
             return ValueTask.FromResult(Result.Fail<Stream>("file is not found"));
         }
 
