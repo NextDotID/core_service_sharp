@@ -46,7 +46,7 @@ public interface IPersistence
 
     async ValueTask<T?> ReadJsonAsync<T>(string service, string filename)
     {
-        var stream = await ReadAsync(service, filename);
+        await using var stream = await ReadAsync(service, filename);
         return await JsonSerializer.DeserializeAsync<T>(stream);
     }
 }

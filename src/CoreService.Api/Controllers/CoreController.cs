@@ -55,7 +55,6 @@ public class CoreController : ControllerBase
     /// </remarks>
     /// <response code="200">Returns the public key to be signed.</response>
     /// <response code="400">If already setup.</response>
-    /// <response code="500">If failed to generate the signature.</response>
     [HttpPost("generate", Name = "Generate subkey keypair")]
     public async ValueTask<ActionResult<SetupStatus>> GenerateAsync()
     {
@@ -113,8 +112,8 @@ public class CoreController : ControllerBase
     ///     `HOST:DOMAIN` should be the domain name of CoreService, e.g. `localhost`.
     /// </remarks>
     /// <response code="200">If setup correctly.</response>
-    /// <response code="400">If signature is invalid.</response>
-    /// <response code="500">If failed to save the configuration.</response>
+    /// <response code="400">If signature is invalid or domain is invalid.</response>
+    /// <response code="409">If already setup.</response>
     [HttpPost("setup")]
     public async ValueTask<ActionResult> SetupAsync(Internal setup)
     {
