@@ -2,7 +2,7 @@ version: "3"
 
 services:
   core_service:
-    image: ghcr.io/nextdotid/core_service_sharp:main
+    image: docker.io/nextdotid/core_service_sharp:main
     networks:
     - core_service
     restart: unless-stopped
