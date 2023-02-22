@@ -50,7 +50,7 @@
         {
             using var response = await httpClient.PostAsync("/api/core/generate", null);
             response.EnsureSuccessStatusCode();
-            var status = await response.Content.ReadFromJsonAsync<InitStatus>();
+            var status = await response.Content.ReadFromJsonAsync<SetupStatus>();
             subPub = status?.SubkeyPublic ?? string.Empty;
         }
         catch (Exception)

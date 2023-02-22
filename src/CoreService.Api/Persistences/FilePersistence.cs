@@ -3,7 +3,6 @@ namespace CoreService.Api.Persistences;
 using System.IO;
 using System.Threading.Tasks;
 using CoreService.Api.Logging;
-using FluentResults;
 
 public class FilePersistence : IPersistence
 {
@@ -16,79 +15,78 @@ public class FilePersistence : IPersistence
         this.logger = logger;
     }
 
-    public ValueTask<Result> DeleteAsync(string service, string? filename = null)
+    public ValueTask DeleteAsync(string service, string? filename = null)
     {
-        if (string.IsNullOrEmpty(service) || !Path.Exists(Path.Combine(rootDirectory, service)))
+        var servicePath = Path.Combine(rootDirectory, service);
+        if (string.IsNullOrEmpty(service) || !Path.Exists(servicePath))
         {
-            logger.PersistenceFileNotFound(service);
-            return ValueTask.FromResult(Result.Fail("service name is required"));
+            logger.PersistenceFileNotFound(servicePath);
+            throw new DirectoryNotFoundException("Directory is not found.");
         }
 
-        var path = new string[] { rootDirectory, service, filename! }
-            .Where(x => !string.IsNullOrEmpty(x))
-            .ToArray();
-
-        // Delete all files in the service directory.
-        Directory.Delete(Path.Combine(path));
-
-        if (Path.Exists(Path.Combine(rootDirectory, service)) && !Directory.GetFiles(Path.Combine(rootDirectory, service)).Any())
+        if (!string.IsNullOrEmpty(filename))
         {
-            Directory.Delete(Path.Combine(rootDirectory, service));
+            File.Delete(Path.Combine(servicePath, filename));
         }
 
-        return ValueTask.FromResult(Result.Ok());
+        if (string.IsNullOrEmpty(filename) ||
+            (Path.Exists(servicePath) && !Directory.GetFiles(servicePath, "*", SearchOption.AllDirectories).Any()))
+        {
+            Directory.Delete(servicePath, true);
+        }
+
+        return ValueTask.CompletedTask;
     }
 
-    public ValueTask<Result<IEnumerable<string>>> ListAsync(string? service = null)
+    public ValueTask<IEnumerable<string>> ListAsync(string? service = null)
     {
         if (string.IsNullOrEmpty(service))
         {
-            return ValueTask.FromResult(Result.Ok(
-                new DirectoryInfo(rootDirectory).GetDirectories()
-                .Select(d => d.Name)));
+            return ValueTask.FromResult(new DirectoryInfo(rootDirectory)
+                .GetDirectories()
+                .Select(d => d.Name));
         }
 
         if (!Path.Exists(Path.Combine(rootDirectory, service)))
         {
             logger.PersistenceFileNotFound(service);
-            return ValueTask.FromResult(Result.Fail<IEnumerable<string>>("service name is required"));
+            throw new FileNotFoundException("File is not found.", service);
         }
 
         var dir = new DirectoryInfo(Path.Combine(rootDirectory, service));
-        return ValueTask.FromResult(Result.Ok<IEnumerable<string>>(
-            dir.GetFiles("*", SearchOption.AllDirectories)
-            .Select(f => Path.GetRelativePath(dir.FullName, f.FullName))
-            .ToList()));
+        return ValueTask.FromResult(dir
+            .GetFiles("*", SearchOption.AllDirectories)
+            .Select(f => Path.GetRelativePath(dir.FullName, f.FullName)));
     }
 
-    public ValueTask<Result<string>> GetPathAsync(string service, string? filename = null)
+    public ValueTask<string> GetPathAsync(string service, string? filename = null)
     {
         if (string.IsNullOrEmpty(service) || !Path.Exists(Path.Combine(rootDirectory, service)))
         {
             logger.PersistenceFileNotFound(service);
-            return ValueTask.FromResult(Result.Fail<string>("service name is required"));
+            throw new FileNotFoundException("File is not found.", service);
         }
 
         var path = new string[] { rootDirectory, service, filename! }
             .Where(x => !string.IsNullOrEmpty(x))
             .ToArray();
-        return ValueTask.FromResult(Result.Ok(Path.Combine(path)));
+        return ValueTask.FromResult(Path.Combine(path));
     }
 
-    public ValueTask<Result<Stream>> ReadAsync(string service, string filename)
+    public ValueTask<Stream> ReadAsync(string service, string filename)
     {
         var path = Path.Combine(rootDirectory, service, filename);
         if (!Path.Exists(path))
         {
             logger.PersistenceFileNotFound(path);
-            return ValueTask.FromResult(Result.Fail<Stream>("file is not found"));
+            throw new FileNotFoundException("File is not found.", path);
         }
 
         Stream stream = File.OpenRead(path);
-        return ValueTask.FromResult(Result.Ok(stream));
+        return ValueTask.FromResult(stream);
     }
 
-    public async ValueTask<Result> WriteAsync(string service, string filename, Stream data, bool leaveOpen = false)
+    public async ValueTask WriteAsync(string service, string filename, Stream data, bool leaveOpen = false)
     {
         var filePath = Path.Combine(rootDirectory, service, filename);
         var dirPath = Path.GetDirectoryName(filePath);
@@ -110,7 +108,5 @@ public class FilePersistence : IPersistence
                 data.Dispose();
             }
         }
-
-        return Result.Ok();
     }
 }

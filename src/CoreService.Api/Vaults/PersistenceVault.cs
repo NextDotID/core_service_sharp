@@ -3,7 +3,6 @@ namespace CoreService.Api.Vaults;
 using System.Threading.Tasks;
 using CoreService.Api.Persistences;
 using CoreService.Shared.Internals;
-using FluentResults;
 
 public class PersistenceVault : IVault
 {
@@ -17,22 +16,22 @@ public class PersistenceVault : IVault
         this.persistence = persistence;
     }
 
-    public ValueTask<Result<string>> LoadAsync(string service, string key)
+    public ValueTask<string> LoadAsync(string service, string key)
     {
         return persistence.ReadTextAsync(VaultService, string.Concat(service, "/", key));
     }
 
-    public ValueTask<Result<Internal>> LoadInternalAsync()
+    public ValueTask<Internal> LoadInternalAsync()
     {
-        return persistence.ReadJsonAsync<Internal>(VaultService, InternalFilename);
+        return persistence.ReadJsonAsync<Internal>(VaultService, InternalFilename)!;
     }
 
-    public ValueTask<Result> SaveAsync(string service, string key, string data)
+    public ValueTask SaveAsync(string service, string key, string data)
     {
         return persistence.WriteTextAsync(VaultService, string.Concat(service, "/", key), data);
     }
 
-    public ValueTask<Result> SaveInternalAsync(Internal internals)
+    public ValueTask SaveInternalAsync(Internal internals)
     {
         return persistence.WriteJsonAsync(VaultService, InternalFilename, internals);
     }

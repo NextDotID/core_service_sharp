@@ -7,7 +7,6 @@ using CoreService.Api.Persistences;
 using CoreService.Api.Vaults;
 using CoreService.Shared.Injectors;
 using CoreService.Shared.Payloads;
-using FluentResults;
 using Microsoft.AspNetCore.Mvc;
 
 [ApiController]
@@ -45,20 +44,8 @@ public class ServiceController : ControllerBase
     [HttpGet(Name = "Get all services")]
     public async ValueTask<ActionResult<ServicesResponse>> GetAllAsync()
     {
-        var list = await persistence.ListAsync();
-        if (list.IsFailed)
-        {
-            return Problem(string.Join(',', list.Errors));
-        }
-
-        var result = new List<ServiceStatus>();
-        foreach (var svc in list.Value)
-        {
-            var running = await agent.IsRunningAsync(svc);
-            result.Add(new ServiceStatus(svc, running.ValueOrDefault));
-        }
-
-        return new ServicesResponse(result);
+        var list = await agent.ListAsync();
+        return new ServicesResponse(list.Select(s => new ServiceStatus(s.Key, s.Value)));
     }
 
     /// <summary>
@@ -95,8 +82,8 @@ public class ServiceController : ControllerBase
             await using var entryStream = entry.Open();
             var filename = junkParent ? entry.FullName[(parent?.Length ?? 0)..] : entry.FullName;
             await persistence.WriteAsync(service, filename, entryStream);
-            var textRes = await persistence.ReadTextAsync(service, filename);
-            prompts.AddRange(injector.Extract(textRes.Value).ValueOrDefault);
+            var text = await persistence.ReadTextAsync(service, filename);
+            prompts.AddRange(injector.Extract(text));
         }
 
         return new PrepareResponse(prompts.Distinct());
@@ -117,18 +104,12 @@ public class ServiceController : ControllerBase
         var hostDir = await persistence.GetPathAsync(service);
         var files = await persistence.ListAsync(service);
 
-        if (internals.IsFailed || hostDir.IsFailed || files.IsFailed)
-        {
-            return Problem(string.Join(',', Result.Merge(internals, hostDir, files).Errors));
-        }
-
-        foreach (var filename in files.Value)
+        foreach (var filename in files)
         {
             var content = await persistence.ReadTextAsync(service, filename);
-            var output = injector.Inject(content.Value, internals.Value, payload.Prompts).Value;
-            output = output
-                .Replace("{{INTERNAL:DIRECTORY}}", hostDir.Value)
-                .Replace("{{INTERNAL:SUBDOMAIN}}", $"{service}.{internals.Value.Host.Domain}");
+            var output = injector.Inject(content, internals, payload.Prompts)
+                .Replace("{{INTERNAL:DIRECTORY}}", hostDir)
+                .Replace("{{INTERNAL:SUBDOMAIN}}", $"{service}.{internals.Host.Domain}");
 
             if (injector.Validate(output))
             {
@@ -136,7 +117,7 @@ public class ServiceController : ControllerBase
             }
             else
             {
-                return Problem("injection points still presented");
+                return Problem("Injection points still presented.");
             }
         }
 

@@ -4,7 +4,6 @@ using System.Text;
 using CoreService.Api.Vaults;
 using CoreService.Shared.Internals;
 using CoreService.Shared.Payloads;
-using FluentResults;
 using Microsoft.AspNetCore.Mvc;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Signer;
@@ -29,14 +28,19 @@ public class CoreController : ControllerBase
     /// <remarks>
     ///     The `SubkeyPublic` is in Hex format.
     /// </remarks>
-    /// <response code="200">Initialized or not, and if initialized, returns the public key of its subkey.</response>
+    /// <response code="200">Returns CoreService is initialized or not, and if initialized, returns the public key of its subkey.</response>
     [HttpGet("status", Name = "Get initialization status")]
-    public async ValueTask<ActionResult<InitStatus>> GetStatusAsync()
+    public async ValueTask<ActionResult<SetupStatus>> GetStatusAsync()
     {
-        var res = await vault.LoadInternalAsync();
-        return new InitStatus(
-            res.IsSuccess && !string.IsNullOrEmpty(res.Value.Subkey.Signature),
-            res.ValueOrDefault?.Subkey?.Public ?? string.Empty);
+        try
+        {
+            var internals = await vault.LoadInternalAsync();
+            return new SetupStatus(!string.IsNullOrEmpty(internals.Subkey.Signature), internals.Subkey.Public);
+        }
+        catch (Exception)
+        {
+            return new SetupStatus(false, string.Empty);
+        }
     }
 
     /// <summary>
@@ -50,24 +54,33 @@ public class CoreController : ControllerBase
     ///     `Subkey certification signature: ${subkey_public_key_hex}`.
     /// </remarks>
     /// <response code="200">Returns the public key to be signed.</response>
-    /// <response code="400">Already setup.</response>
-    /// <response code="500">Error when generating the signature.</response>
+    /// <response code="400">If already setup.</response>
+    /// <response code="500">If failed to generate the signature.</response>
     [HttpPost("generate", Name = "Generate subkey keypair")]
-    public async ValueTask<ActionResult<InitStatus>> GenerateAsync()
+    public async ValueTask<ActionResult<SetupStatus>> GenerateAsync()
     {
-        var load = await vault.LoadInternalAsync();
-        if (load.IsSuccess && !string.IsNullOrEmpty(load.Value.Subkey.Signature))
+        Internal internals;
+
+        try
         {
-            return Problem("already setup");
+            internals = await vault.LoadInternalAsync();
+        }
+        catch (Exception)
+        {
+            internals = new Internal(
+                new Subkey(
+                        string.Empty,
+                        string.Empty,
+                        string.Empty,
+                        string.Empty),
+                new Host(string.Empty));
         }
 
-        var internals = load.ValueOrDefault ?? new Internal(
-            new Subkey(
-                    string.Empty,
-                    string.Empty,
-                    string.Empty,
-                    string.Empty),
-            new Host(string.Empty));
+        if (!string.IsNullOrEmpty(internals.Subkey.Signature))
+        {
+            return Problem("Already setup.", null, StatusCodes.Status409Conflict);
+        }
+
         var eckey = EthECKey.GenerateKey();
         internals = internals with
         {
@@ -78,13 +91,16 @@ public class CoreController : ControllerBase
                 string.Empty),
         };
 
-        var save = await vault.SaveInternalAsync(internals);
-        if (save.IsFailed)
+        try
         {
-            return Problem(save.Errors.First().Message, null, StatusCodes.Status500InternalServerError);
+            await vault.SaveInternalAsync(internals);
+        }
+        catch (Exception ex)
+        {
+            return Problem(ex.Message, null, StatusCodes.Status500InternalServerError);
         }
 
-        return new InitStatus(false, internals.Subkey.Public);
+        return new SetupStatus(false, internals.Subkey.Public);
     }
 
     /// <summary>
@@ -97,57 +113,69 @@ public class CoreController : ControllerBase
     ///     `HOST:DOMAIN` should be the domain name of CoreService, e.g. `localhost`.
     /// </remarks>
     /// <response code="200">If setup correctly.</response>
-    /// <response code="400">Invalid signature.</response>
-    /// <response code="500">Error when saving the configuration.</response>
+    /// <response code="400">If signature is invalid.</response>
+    /// <response code="500">If failed to save the configuration.</response>
     [HttpPost("setup")]
     public async ValueTask<ActionResult> SetupAsync(Internal setup)
     {
-        var load = await vault.LoadInternalAsync();
-        if (load.IsSuccess && !string.IsNullOrEmpty(load.Value.Subkey.Signature))
+        Internal internals;
+
+        try
         {
-            return Problem("already setup");
+            internals = await vault.LoadInternalAsync();
+        }
+        catch (Exception)
+        {
+            internals = new Internal(
+            new Subkey(
+                    string.Empty,
+                    string.Empty,
+                    string.Empty,
+                    string.Empty),
+            new Host(string.Empty));
+        }
+
+        if (!string.IsNullOrEmpty(internals.Subkey.Signature))
+        {
+            return Problem("Already setup.", null, StatusCodes.Status409Conflict);
         }
 
         if (string.IsNullOrEmpty(setup.Host.Domain))
         {
-            return Problem("invalid domain");
+            return Problem("Invalid domain.", null, StatusCodes.Status400BadRequest);
         }
 
-        var privKey = string.IsNullOrEmpty(load.ValueOrDefault?.Subkey?.Private)
+        string pubKey;
+        var privKey = string.IsNullOrEmpty(internals.Subkey.Private)
             ? setup.Subkey.Private
-            : load.Value.Subkey.Private;
-        var validate = ExtractPublicKey(privKey, setup.Subkey.Avatar, setup.Subkey.Signature);
-        if (validate.IsFailed)
+            : internals.Subkey.Private;
+
+        try
         {
-            return Problem(string.Join('\n', validate.Reasons.Select(r => r.Message)));
+            pubKey = ExtractPublicKey(privKey, setup.Subkey.Avatar, setup.Subkey.Signature);
+        }
+        catch (Exception ex)
+        {
+            return Problem(ex.Message, null, StatusCodes.Status400BadRequest);
         }
 
-        var internals = setup with
+        var result = setup with
         {
             Subkey = setup.Subkey with
             {
                 Private = privKey,
-                Public = validate.Value,
+                Public = pubKey,
             },
         };
 
-        var res = await vault.SaveInternalAsync(internals);
-        return res.IsSuccess ? Ok() : Problem("failed to init", null, StatusCodes.Status500InternalServerError);
+        await vault.SaveInternalAsync(result);
+        return Ok();
     }
 
-    private static Result<string> ExtractPublicKey(string privKey, string avatar, string signature)
+    private static string ExtractPublicKey(string privKey, string avatar, string signature)
     {
-        EthECKey subkey;
+        var subkey = new EthECKey(privKey);
         var signer = new EthereumMessageSigner();
-
-        try
-        {
-            subkey = new EthECKey(privKey);
-        }
-        catch (Exception ex)
-        {
-            return Result.Fail(ex.Message);
-        }
 
         var recoveredAvatar = EthECKey.RecoverFromSignature(
             MessageSigner.ExtractEcdsaSignature(signature),
@@ -158,9 +186,9 @@ public class CoreController : ControllerBase
 
         if (!string.Equals(avatar, recoveredAvatar, StringComparison.OrdinalIgnoreCase))
         {
-            return Result.Fail("invalid subkey");
+            throw new ArgumentException("Avatar recovered does not match.", nameof(avatar));
         }
 
-        return Result.Ok(subkey.GetPubKey(true).ToHex(true));
+        return subkey.GetPubKey(true).ToHex(true);
     }
 }

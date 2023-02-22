@@ -5,7 +5,6 @@ using System.Text.RegularExpressions;
 using CoreService.Api.Logging;
 using CoreService.Shared.Injectors;
 using CoreService.Shared.Internals;
-using FluentResults;
 using Microsoft.Extensions.Logging;
 using Nethereum.Hex.HexConvertors.Extensions;
 using SimpleBase;
@@ -19,7 +18,7 @@ public partial class Injector
         this.logger = logger;
     }
 
-    public Result<List<InjectionPoint>> Extract(string input)
+    public List<InjectionPoint> Extract(string input)
     {
         // Hashset here to dedup by default.
         var result = new HashSet<InjectionPoint>();
@@ -34,7 +33,7 @@ public partial class Injector
         return result.ToList();
     }
 
-    public Result<string> Inject(string input, Internal internals, IDictionary<string, string> prompts)
+    public string Inject(string input, Internal internals, IDictionary<string, string> prompts)
     {
         using var doc = JsonSerializer.SerializeToDocument(internals);
 
