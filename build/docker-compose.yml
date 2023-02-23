@@ -2,14 +2,16 @@ version: "3"
 
 services:
   core_service:
+    container_name: core_service
     image: nextdotid/core_service_sharp:main
+    restart: unless-stopped
     networks:
       - core_service
-    restart: unless-stopped
-    env_file:
-      - .env
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "./data/:/data/"
+    environment:
+      - DATABASE__PATH=/data/core_service.db
     labels:
       - "traefik.http.routers.core_service.rule=PathPrefix(`/`)"
 
@@ -21,6 +23,7 @@ services:
     command: --api.insecure=true --providers.docker
     ports:
       - "80:80"
+      - "443:443"
       - "8080:8080"
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"

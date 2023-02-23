@@ -24,7 +24,7 @@ public partial class Injector
         var result = new HashSet<InjectionPoint>();
         foreach (var match in InjectPattern().Matches(input).Cast<Match>())
         {
-            if (!match.Success || !result.Add(InjectionPoint.FromText(match.ValueSpan[2..^2])))
+            if (!match.Success || !result.Add(InjectionPoint.FromText(match.Value[2..^2])))
             {
                 logger.ExtractMatchFailed(match.Value);
             }
@@ -35,12 +35,11 @@ public partial class Injector
 
     public string Inject(string input, Internal internals, IDictionary<string, string> prompts)
     {
-        using var doc = JsonSerializer.SerializeToDocument(internals);
-
         // Prevent GENERATE from being assigned different values.
         var genDict = new Dictionary<GeneratePoint, string>();
+        using var doc = JsonSerializer.SerializeToDocument(internals);
 
-        return InjectPattern().Replace(input, match => InjectionPoint.FromText(match.ValueSpan[2..^2]) switch
+        return InjectPattern().Replace(input, match => InjectionPoint.FromText(match.Value[2..^2]) switch
         {
             GeneratePoint gp => ResolveGeneratePoint(gp, genDict),
             PromptPoint { Key: var key } => prompts.TryGetValue(key, out var pValue) ? pValue : match.Value,
@@ -53,8 +52,14 @@ public partial class Injector
     /// Validate if all injection points in input are replaced.
     /// </summary>
     /// <param name="input">Text to validate.</param>
+    /// <param name="point">If all replaced, return the first match.</param>
     /// <returns><c>True</c> if all replaced.</returns>
-    public bool Validate(string input) => !InjectPattern().Matches(input).Any();
+    public bool Validate(string input, out string point)
+    {
+        var firstMatch = InjectPattern().Matches(input).FirstOrDefault();
+        point = firstMatch?.Value ?? string.Empty;
+        return !(firstMatch?.Success ?? false);
+    }
 
     /// <summary>
     /// General injection point. May contains these 3 types:

@@ -1,7 +1,6 @@
 namespace CoreService.Shared.Injectors;
 
 using System.Text.Json.Serialization;
-using Open.Text;
 
 public enum GenerateCategory
 {
@@ -22,7 +21,7 @@ public enum InternalTransform
 [JsonDerivedType(typeof(InternalPoint), nameof(InternalPoint))]
 public abstract record InjectionPoint
 {
-    public static InjectionPoint FromText(ReadOnlySpan<char> text)
+    public static InjectionPoint FromText(string text)
     {
         var parts = text.Split(':', StringSplitOptions.TrimEntries);
         return parts[0] switch

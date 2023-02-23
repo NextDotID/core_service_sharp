@@ -24,7 +24,7 @@
       "launchUrl": "{Scheme}://{ServiceHost}:{ServicePort}/",
       "publishAllPorts": true,
       "useSSL": true,
-      "DockerfileRunArguments": "-v //var/run/docker.sock:/var/run/docker.sock -v {OutDir}/data:/data/ -e PERSISTENCE__ROOT=/data/"
+      "DockerfileRunArguments": "-v //var/run/docker.sock:/var/run/docker.sock -v {OutDir}/data:/data/ -e DATABASE__PATH=/data/core_service.db"
     },
     "WSL": {
       "commandName": "WSL2",

@@ -8,16 +8,15 @@
 
   <ItemGroup>
     <PackageReference Include="Blazored.SessionStorage" Version="2.3.0" />
-    <PackageReference Include="Chubrik.Json" Version="1.0.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.Authorization" Version="7.0.2" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Authentication" Version="7.0.2" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="7.0.2" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="7.0.2" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.Authorization" Version="7.0.3" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Authentication" Version="7.0.3" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="7.0.3" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="7.0.3" PrivateAssets="all" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="7.0.0" />
-    <PackageReference Include="MudBlazor" Version="6.1.8" />
-    <PackageReference Include="Nethereum.Metamask.Blazor" Version="4.12.0" />
-    <PackageReference Include="Nethereum.Signer" Version="4.12.0" />
-    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="6.26.0" />
+    <PackageReference Include="MudBlazor" Version="6.1.9" />
+    <PackageReference Include="Nethereum.Metamask.Blazor" Version="4.13.0" />
+    <PackageReference Include="Nethereum.Signer" Version="4.13.0" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="6.27.0" />
     <PackageReference Include="System.Linq.Async" Version="6.0.1" />
   </ItemGroup>
 

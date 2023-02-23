@@ -1,6 +1,7 @@
 namespace CoreService.Api.Controllers;
 
 using System.Text;
+using CoreService.Api.Logging;
 using CoreService.Api.Vaults;
 using CoreService.Shared.Internals;
 using CoreService.Shared.Payloads;
@@ -54,7 +55,7 @@ public class CoreController : ControllerBase
     ///     `Subkey certification signature: ${subkey_public_key_hex}`.
     /// </remarks>
     /// <response code="200">Returns the public key to be signed.</response>
-    /// <response code="400">If already setup.</response>
+    /// <response code="409">If already setup.</response>
     [HttpPost("generate", Name = "Generate subkey keypair")]
     public async ValueTask<ActionResult<SetupStatus>> GenerateAsync()
     {
@@ -64,15 +65,10 @@ public class CoreController : ControllerBase
         {
             internals = await vault.LoadInternalAsync();
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            internals = new Internal(
-                new Subkey(
-                        string.Empty,
-                        string.Empty,
-                        string.Empty,
-                        string.Empty),
-                new Host(string.Empty));
+            logger.InternalLoadingFailed(ex);
+            internals = new Internal(new Subkey(), new Host());
         }
 
         if (!string.IsNullOrEmpty(internals.Subkey.Signature))
@@ -83,11 +79,7 @@ public class CoreController : ControllerBase
         var eckey = EthECKey.GenerateKey();
         internals = internals with
         {
-            Subkey = new(
-                eckey.GetPrivateKey(),
-                eckey.GetPubKey(true).ToHex(true),
-                string.Empty,
-                string.Empty),
+            Subkey = new() { Private = eckey.GetPrivateKey(), Public = eckey.GetPubKey(true).ToHex(true) },
         };
 
         try
@@ -96,6 +88,7 @@ public class CoreController : ControllerBase
         }
         catch (Exception ex)
         {
+            logger.InternalSetupFailed(ex);
             return Problem(ex.Message, null, StatusCodes.Status500InternalServerError);
         }
 
@@ -117,31 +110,26 @@ public class CoreController : ControllerBase
     [HttpPost("setup")]
     public async ValueTask<ActionResult> SetupAsync(Internal setup)
     {
+        if (string.IsNullOrEmpty(setup.Host.Domain))
+        {
+            return Problem("Invalid domain.", null, StatusCodes.Status400BadRequest);
+        }
+
         Internal internals;
 
         try
         {
             internals = await vault.LoadInternalAsync();
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            internals = new Internal(
-            new Subkey(
-                    string.Empty,
-                    string.Empty,
-                    string.Empty,
-                    string.Empty),
-            new Host(string.Empty));
+            logger.InternalLoadingFailed(ex);
+            internals = new Internal();
         }
 
         if (!string.IsNullOrEmpty(internals.Subkey.Signature))
         {
             return Problem("Already setup.", null, StatusCodes.Status409Conflict);
-        }
-
-        if (string.IsNullOrEmpty(setup.Host.Domain))
-        {
-            return Problem("Invalid domain.", null, StatusCodes.Status400BadRequest);
         }
 
         string pubKey;
@@ -167,7 +155,16 @@ public class CoreController : ControllerBase
             },
         };
 
-        await vault.SaveInternalAsync(result);
+        try
+        {
+            await vault.SaveInternalAsync(result);
+        }
+        catch (Exception ex)
+        {
+            logger.InternalSetupFailed(ex);
+            return Problem(ex.Message, null, StatusCodes.Status500InternalServerError);
+        }
+
         return Ok();
     }
 

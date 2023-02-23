@@ -9,4 +9,10 @@ public record Internal(
     [property: JsonPropertyName("SUBKEY")]
     Subkey Subkey,
     [property: JsonPropertyName("HOST")]
-    Host Host);
+    Host Host)
+{
+    public Internal()
+        : this(new(), new())
+    {
+    }
+}
