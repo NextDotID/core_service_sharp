@@ -1,6 +1,6 @@
-FROM busybox:latest AS download
+FROM alpine:3 AS download
 RUN CURRENT_ARCH=`uname -m` && \
-    wget --tries=100 --no-check-certificate -O /tmp/docker-compose https://github.com/docker/compose/releases/download/v2.16.0/docker-compose-linux-$CURRENT_ARCH
+    wget -O /tmp/docker-compose https://github.com/docker/compose/releases/download/v2.16.0/docker-compose-linux-$CURRENT_ARCH
 
 FROM mcr.microsoft.com/dotnet/aspnet:7.0 AS base
 WORKDIR /app
