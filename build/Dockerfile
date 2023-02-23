@@ -8,6 +8,8 @@ EXPOSE 80
 EXPOSE 443
 
 FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build
+# See (https://en.wikipedia.org/wiki/W%5EX). This feature crashes the Qemu building for .NET 7
+ARG DOTNET_EnableWriteXorExecute=0
 WORKDIR /src
 COPY ["src/CoreService.Api/CoreService.Api.csproj", "src/CoreService.Api/"]
 COPY ["src/CoreService.Shared/CoreService.Shared.csproj", "src/CoreService.Shared/"]
