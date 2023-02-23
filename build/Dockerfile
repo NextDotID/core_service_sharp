@@ -11,7 +11,6 @@ FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build
 WORKDIR /src
 COPY ["src/CoreService.Api/CoreService.Api.csproj", "src/CoreService.Api/"]
 COPY ["src/CoreService.Shared/CoreService.Shared.csproj", "src/CoreService.Shared/"]
-COPY ["src/CoreService.Web/CoreService.Web.csproj", "src/CoreService.Web/"]
 RUN dotnet restore "src/CoreService.Api/CoreService.Api.csproj"
 COPY . .
 WORKDIR "/src/src/CoreService.Api"
