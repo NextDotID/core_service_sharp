@@ -1,14 +1,11 @@
 namespace CoreService.Api.Agents;
-
-using FluentResults;
-
 public interface IAgent
 {
-    ValueTask<Result> StartAsync(string service);
+    ValueTask UpAsync(string service, string compose);
 
-    ValueTask<Result> StopAsync(string service);
+    ValueTask StopAsync(string service, string compose);
 
-    ValueTask<Result> RemoveAsync(string service);
+    ValueTask DownAsync(string service, string compose);
 
-    ValueTask<Result<bool>> IsRunningAsync(string service);
+    ValueTask<IDictionary<string, bool>> ListAsync();
 }

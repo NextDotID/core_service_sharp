@@ -17,4 +17,10 @@ public record Subkey(
     [property: JsonPropertyName("AVATAR")]
     string Avatar,
     [property: JsonPropertyName("SIGNATURE")]
-    string Signature);
+    string Signature)
+{
+    public Subkey()
+        : this(string.Empty, string.Empty, string.Empty, string.Empty)
+    {
+    }
+}

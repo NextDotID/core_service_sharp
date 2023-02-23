@@ -1,92 +1,99 @@
 namespace CoreService.Api.Agents;
-
+using System.Text;
 using System.Threading.Tasks;
-using CoreService.Api.Persistences;
-using Ductus.FluentDocker.Builders;
-using Ductus.FluentDocker.Services;
-using FluentResults;
+using CliWrap;
+using CliWrap.Buffered;
+using CoreService.Api.Logging;
 
 public class DockerComposeAgent : IAgent
 {
-    private const string ComposeFile = "docker-compose.yml";
-
-    private readonly IPersistence persistence;
     private readonly ILogger logger;
 
-    public DockerComposeAgent(
-        IPersistence persistence,
-        ILogger<DockerComposeAgent> logger)
+    public DockerComposeAgent(ILogger<DockerComposeAgent> logger)
     {
-        this.persistence = persistence;
         this.logger = logger;
     }
 
-    public async ValueTask<Result<bool>> IsRunningAsync(string service)
+    /// <inheritdoc/>
+    public async ValueTask<IDictionary<string, bool>> ListAsync()
     {
-        var svcRes = await BuildServiceAsync(service);
-        if (svcRes.IsFailed)
+        var result = new Dictionary<string, bool>();
+        var stdout = new StringBuilder();
+        var cmd = await Cli.Wrap("docker-compose")
+            .WithArguments("ls --all --format json")
+            .WithStandardOutputPipe(PipeTarget.ToStringBuilder(stdout))
+            .ExecuteBufferedAsync();
+
+        try
         {
-            return svcRes.ToResult();
+            var list = System.Text.Json.JsonSerializer.Deserialize<DockerComposeLsOutput[]>(cmd.StandardOutput);
+            foreach (var service in list ?? Array.Empty<DockerComposeLsOutput>())
+            {
+                result.TryAdd(service.Name, !service.Status.Contains("exited"));
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.DockerOutputParseFailed(ex);
+            throw new ArgumentException("Invalid docker-compose output.", ex);
         }
 
-        using var svc = svcRes.Value;
-        return svc.Services.All(s => s.State == ServiceRunningState.Running);
+        return result;
     }
 
-    public async ValueTask<Result> RemoveAsync(string service)
+    public async ValueTask DownAsync(string service, string compose)
     {
-        var svcRes = await BuildServiceAsync(service);
-        if (svcRes.IsFailed)
-        {
-            return svcRes.ToResult();
-        }
+        var cmd = await BuildCommandAsync(service, compose);
+        var result = await cmd.WithArguments("down --remove-orphans")
+            .ExecuteBufferedAsync();
 
-        using var svc = svcRes.Value;
-        svc.Remove(true);
-        return Result.Ok();
+        if (result.ExitCode != 0)
+        {
+            logger.DockerInteractionFailed(service, result.StandardError);
+            throw new InvalidOperationException("Failed to operate docker-compose.");
+        }
     }
 
-    public async ValueTask<Result> StartAsync(string service)
+    public async ValueTask UpAsync(string service, string compose)
     {
-        var svcRes = await BuildServiceAsync(service);
-        if (svcRes.IsFailed)
-        {
-            return svcRes.ToResult();
-        }
+        var cmd = await BuildCommandAsync(service, compose);
+        var result = await cmd.WithArguments("up -d")
+            .ExecuteBufferedAsync();
 
-        using var svc = svcRes.Value;
-        svc.Start();
-        return Result.Ok();
+        if (result.ExitCode != 0)
+        {
+            logger.DockerInteractionFailed(service, result.StandardError);
+            throw new InvalidOperationException("Failed to operate docker-compose.");
+        }
     }
 
-    public async ValueTask<Result> StopAsync(string service)
+    public async ValueTask StopAsync(string service, string compose)
     {
-        var svcRes = await BuildServiceAsync(service);
-        if (svcRes.IsFailed)
-        {
-            return svcRes.ToResult();
-        }
+        var cmd = await BuildCommandAsync(service, compose);
+        var result = await cmd.WithArguments("stop")
+            .ExecuteBufferedAsync();
 
-        using var svc = svcRes.Value;
-        svc.Stop();
-        return Result.Ok();
+        if (result.ExitCode != 0)
+        {
+            logger.DockerInteractionFailed(service, result.StandardError);
+            throw new InvalidOperationException("Failed to operate docker-compose.");
+        }
     }
 
-    private async ValueTask<Result<ICompositeService>> BuildServiceAsync(string service)
+    private static async ValueTask<Command> BuildCommandAsync(string service, string compose)
     {
-        var pathRes = await persistence.GetPathAsync(service, ComposeFile);
-        if (pathRes.IsFailed)
-        {
-            return pathRes.ToResult();
-        }
+        var stderr = new StringBuilder();
+        var temp = Directory.CreateTempSubdirectory(service);
+        var path = Path.Combine(temp.FullName, service);
+        var dir = Directory.CreateDirectory(path);
 
-        var path = pathRes.Value;
-        return new Builder()
-            .UseContainer()
-            .UseCompose()
-            .FromFile(path)
-            .KeepRunning()
-            .Build()
-            .ToResult();
+        await File.WriteAllTextAsync(Path.Combine(dir.FullName, "docker-compose.yml"), compose);
+
+        return Cli.Wrap("docker-compose")
+            .WithWorkingDirectory(dir.FullName)
+            .WithValidation(CommandResultValidation.None)
+            .WithStandardErrorPipe(PipeTarget.ToStringBuilder(stderr));
     }
+
+    private sealed record DockerComposeLsOutput(string Name, string Status, string ConfigFiles);
 }

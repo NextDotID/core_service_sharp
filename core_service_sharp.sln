@@ -12,7 +12,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "solution", "solution", "{56
 		.editorconfig = .editorconfig
 		build\coverlet.runsettings = build\coverlet.runsettings
 		Directory.Build.props = Directory.Build.props
-		docker-compose.yml = docker-compose.yml
+		build\docker-compose.yml = build\docker-compose.yml
+		build\Dockerfile = build\Dockerfile
 		build\xunit.runner.json = build\xunit.runner.json
 	EndProjectSection
 EndProject
@@ -20,7 +21,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CoreService.Shared", "src\C
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CoreService.Api", "src\CoreService.Api\CoreService.Api.csproj", "{1730BAA4-7F3E-4DFF-A55C-A078BF49224E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CoreService.Web", "src\CoreService.Web\CoreService.Web.csproj", "{7396E736-C57F-4B9E-9C80-20E264475CDC}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CoreService.Web", "src\CoreService.Web\CoreService.Web.csproj", "{7396E736-C57F-4B9E-9C80-20E264475CDC}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
