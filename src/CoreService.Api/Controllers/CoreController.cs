@@ -116,15 +116,14 @@ public class CoreController : ControllerBase
         }
 
         Internal internals;
-
         try
         {
             internals = await vault.LoadInternalAsync();
         }
         catch (Exception ex)
         {
-            logger.InternalLoadingFailed(ex);
             internals = new Internal();
+            logger.InternalLoadingFailed(ex);
         }
 
         if (!string.IsNullOrEmpty(internals.Subkey.Signature))

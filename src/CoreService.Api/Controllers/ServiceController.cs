@@ -128,4 +128,71 @@ public class ServiceController : ControllerBase
 
         return Ok();
     }
+
+    /// <summary>
+    ///     Stop a running service.
+    /// </summary>
+    /// <param name="service">Service name.</param>
+    /// <returns>Ok.</returns>
+    /// <response code="200">If stopped.</response>
+    /// <response code="404">If a service with this name is not found.</response>
+    [HttpPost("{service}/stop", Name = "Stop a running service")]
+    public async ValueTask<ActionResult> StopAsync(string service)
+    {
+        var svcColl = liteDatabase.GetCollection<Service>();
+        var svc = svcColl.FindOne(s => s.Name == service);
+        if (svc == null || !svc.IsCreated)
+        {
+            return Problem("Service is not found.", null, StatusCodes.Status404NotFound);
+        }
+
+        try
+        {
+            await agent.StopAsync(svc.Name, svc.Compose);
+        }
+        catch (Exception ex)
+        {
+            logger.DockerInteractionFailed(service, ex.Message, ex);
+            return Problem("docker-compose failed to stop", null, StatusCodes.Status500InternalServerError);
+        }
+
+        return Ok();
+    }
+
+    /// <summary>
+    ///     Delete a running service.
+    /// </summary>
+    /// <param name="service">Service name.</param>
+    /// <returns>Ok.</returns>
+    /// <response code="200">If deleted.</response>
+    /// <response code="400">If the service is still running.</response>
+    /// <response code="404">If a service with this name is not found.</response>
+    [HttpPost("{service}/down", Name = "Delete a created service")]
+    public async ValueTask<ActionResult> DeleteAsync(string service)
+    {
+        var svcColl = liteDatabase.GetCollection<Service>();
+        var svc = svcColl.FindOne(s => s.Name == service);
+        if (svc == null || svc.IsCreated)
+        {
+            return Problem("Service is not found.", null, StatusCodes.Status404NotFound);
+        }
+
+        var list = await agent.ListAsync();
+        if (list.Any(p => p.Key == svc.Name && p.Value))
+        {
+            return Problem("Service is still running.", null, StatusCodes.Status400BadRequest);
+        }
+
+        try
+        {
+            await agent.StopAsync(svc.Name, svc.Compose);
+        }
+        catch (Exception ex)
+        {
+            logger.DockerInteractionFailed(service, ex.Message, ex);
+            return Problem("docker-compose failed to stop", null, StatusCodes.Status500InternalServerError);
+        }
+
+        return Ok();
+    }
 }
