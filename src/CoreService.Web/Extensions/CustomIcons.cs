@@ -22,4 +22,8 @@ public static class CustomIcons
             <path d="m267.2 153.5-52.3-15.3 15.9 23.9-23.7 46 31.2-.4h46.5zm-163.6-15.3-52.3 15.3-17.4 54.2h46.4l31.1.4-23.6-46zm71 26.4 3.3-57.7 15.2-41.1h-67.5l15 41.1 3.5 57.7 1.2 18.2.1 44.8h27.7l.2-44.8z" class="st6"/>
         </svg>
         """;
+
+    public const string NextId = """
+        <svg fill="none" viewBox="0 0 144 78" xmlns="http://www.w3.org/2000/svg" class="nextid-logo" alt="Next.ID"><path d="M18 0H0l22.5 39L0 78h18l22.5-39z" fill="#1c68f3"></path><path d="M61.5 0h15v78h-15z" fill="#000"></path><path clip-rule="evenodd" d="M84 0v78h21c21.539 0 39-17.46 39-39S126.539 0 105 0zm15 63h6c13.255 0 24-10.745 24-24s-10.745-24-24-24h-6z" fill="#000" fill-rule="evenodd"></path><path d="M39 63h15v15H39z" fill="#1c68f3"></path></svg>
+        """;
 }

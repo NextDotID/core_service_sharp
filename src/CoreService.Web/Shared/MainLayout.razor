@@ -1,27 +1,17 @@
 @inherits LayoutComponentBase
 
-<MudThemeProvider IsDarkMode="@true" />
+<MudThemeProvider IsDarkMode="@false" />
 <MudDialogProvider />
 <MudSnackbarProvider />
 
 <MudLayout>
-    <MudAppBar Elevation="1">
-        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@((e) => DrawerToggle())" />
-        <MudText Typo="Typo.h5" Class="ml-3">Core Service</MudText>
+    <MudAppBar Elevation="1" Fixed="@true" Class="" Style="color:black;background-color:white;" >
+        <MudIcon Icon="@CustomIcons.NextId"></MudIcon>
+        <MudText Typo="Typo.h5" Class="ml-3">CORE SERVICE</MudText>
         <MudSpacer />
+        <MudIconButton Icon="@Icons.Material.Filled.MoreVert" Color="Color.Inherit" Edge="Edge.End" />
     </MudAppBar>
-    <MudDrawer @bind-Open="@drawerOpen" ClipMode="DrawerClipMode.Always" Elevation="2">
-        <NavMenu/>
-    </MudDrawer>   
     <MudMainContent>
-        <MudBreadcrumbs Class="mt-0 px-5" Items="Breadcrumbs" MaxItems="6" Separator=">" />
-        <MudContainer Class="ps-0 ms-5 mt-2" MaxWidth="MaxWidth.Medium">
-            @Body
-        </MudContainer>
+        @Body
     </MudMainContent>
 </MudLayout>
-
-@code {
-    private bool drawerOpen = true;
-    void DrawerToggle() => drawerOpen = !drawerOpen;
-}

@@ -83,10 +83,10 @@
 
         var signer = new EthereumMessageSigner();
         var avatar = EthECKey.RecoverFromSignature(
-            MessageSigner.ExtractEcdsaSignature(sig),
-            signer.HashPrefixedMessage(Encoding.UTF8.GetBytes(message)))
-        .GetPubKey(true)
-        .ToHex(true);
+                MessageSigner.ExtractEcdsaSignature(sig),
+                signer.HashPrefixedMessage(Encoding.UTF8.GetBytes(message)))
+            .GetPubKey(true)
+            .ToHex(true);
 
         try
         {
