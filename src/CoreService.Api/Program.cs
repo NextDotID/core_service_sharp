@@ -1,4 +1,3 @@
-using System.Reflection;
 using CoreService.Api.Agents;
 using CoreService.Api.Database;
 using CoreService.Api.Injectors;
@@ -14,8 +13,10 @@ builder.Services
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
-    var xmlFilename = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
-    options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, xmlFilename));
+    var apiXml = $"{nameof(CoreService)}.{nameof(CoreService.Api)}.xml";
+    var sharedXml = $"{nameof(CoreService)}.{nameof(CoreService.Shared)}.xml";
+    options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, apiXml));
+    options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, sharedXml));
 });
 builder.Services.AddProblemDetails();
 
