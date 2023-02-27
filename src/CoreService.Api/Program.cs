@@ -7,6 +7,8 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services
     .Configure<RouteOptions>(options => options.LowercaseUrls = true)
+    .AddCors(options => options.AddDefaultPolicy(
+        policy => policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod()))
     .AddControllers()
     .AddJsonOptions(options => options.JsonSerializerOptions.PropertyNamingPolicy = null);
 
@@ -39,6 +41,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.UseCors();
 app.UseAuthorization();
 app.MapControllers();
 
