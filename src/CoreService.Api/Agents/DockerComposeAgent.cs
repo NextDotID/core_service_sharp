@@ -44,7 +44,7 @@ public class DockerComposeAgent : IAgent
     public async ValueTask DownAsync(string service, string compose)
     {
         var cmd = await BuildCommandAsync(service, compose);
-        var result = await cmd.WithArguments("down --remove-orphans -f")
+        var result = await cmd.WithArguments("down --remove-orphans")
             .ExecuteBufferedAsync();
 
         if (result.ExitCode != 0)

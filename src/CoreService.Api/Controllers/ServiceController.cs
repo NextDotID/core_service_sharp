@@ -172,7 +172,7 @@ public class ServiceController : ControllerBase
     {
         var svcColl = liteDatabase.GetCollection<Service>();
         var svc = svcColl.FindOne(s => s.Name == service);
-        if (svc == null || svc.IsCreated)
+        if (svc == null || !svc.IsCreated)
         {
             return Problem("Service is not found.", null, StatusCodes.Status404NotFound);
         }
@@ -185,12 +185,12 @@ public class ServiceController : ControllerBase
 
         try
         {
-            await agent.StopAsync(svc.Name, svc.Compose);
+            await agent.DownAsync(svc.Name, svc.Compose);
         }
         catch (Exception ex)
         {
             logger.DockerInteractionFailed(service, ex.Message, ex);
-            return Problem("docker-compose failed to stop", null, StatusCodes.Status500InternalServerError);
+            return Problem("docker-compose failed to down", null, StatusCodes.Status500InternalServerError);
         }
 
         return Ok();
