@@ -3,6 +3,8 @@ public interface IAgent
 {
     ValueTask UpAsync(string service, string compose);
 
+    ValueTask StartAsync(string service, string compose);
+
     ValueTask StopAsync(string service, string compose);
 
     ValueTask DownAsync(string service, string compose);

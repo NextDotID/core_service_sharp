@@ -44,7 +44,7 @@ public class DockerComposeAgent : IAgent
     public async ValueTask DownAsync(string service, string compose)
     {
         var cmd = await BuildCommandAsync(service, compose);
-        var result = await cmd.WithArguments("down --remove-orphans -f")
+        var result = await cmd.WithArguments("down --remove-orphans")
             .ExecuteBufferedAsync();
 
         if (result.ExitCode != 0)
@@ -58,6 +58,19 @@ public class DockerComposeAgent : IAgent
     {
         var cmd = await BuildCommandAsync(service, compose);
         var result = await cmd.WithArguments("up -d")
+            .ExecuteBufferedAsync();
+
+        if (result.ExitCode != 0)
+        {
+            logger.DockerInteractionFailed(service, result.StandardError);
+            throw new InvalidOperationException("Failed to operate docker-compose.");
+        }
+    }
+
+    public async ValueTask StartAsync(string service, string compose)
+    {
+        var cmd = await BuildCommandAsync(service, compose);
+        var result = await cmd.WithArguments("start")
             .ExecuteBufferedAsync();
 
         if (result.ExitCode != 0)

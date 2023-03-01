@@ -116,12 +116,39 @@ else
 
     private async Task ToggleService(ServiceStatus service)
     {
+        if (service.IsRunning)
+        {
+            try
+            {
+                await httpClient.PostAsync($"/api/service/{service.Name}/stop", null);
+            }
+            catch (Exception)
+            {
+                Snackbar.Add("Something happened (server-side)...", Severity.Error, options =>
+                {
+                    options.Icon = Icons.Material.Filled.WifiTetheringError;
+                });
+            }
+        }
+
         // Refresh.
         await LoadListAsync();
     }
 
     private async Task RemoveService(ServiceStatus service)
     {
+        try
+        {
+            await httpClient.PostAsync($"/api/service/{service.Name}/down", null);
+        }
+        catch (Exception)
+        {
+            Snackbar.Add("Something happened (server-side)...", Severity.Error, options =>
+            {
+                options.Icon = Icons.Material.Filled.WifiTetheringError;
+            });
+        }
+
         // Refresh.
         await LoadListAsync();
     }
