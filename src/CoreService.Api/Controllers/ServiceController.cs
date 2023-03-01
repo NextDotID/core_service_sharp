@@ -85,7 +85,7 @@ public class ServiceController : ControllerBase
     }
 
     /// <summary>
-    ///     Create the service with the given prompts.
+    ///     Create and start the service with the given prompts.
     /// </summary>
     /// <param name="service">Service name.</param>
     /// <param name="payload">Prompt values and other configuration.</param>
@@ -93,7 +93,8 @@ public class ServiceController : ControllerBase
     /// <response code="200">If created.</response>
     /// <response code="400">If some injection points are still presented.</response>
     /// <response code="404">If a service with this name is not found.</response>
-    [HttpPost("{service}/create", Name = "Create and start a service")]
+    [HttpPost("{service}/create", Name = "Create and start a service (deprecated)")]
+    [HttpPost("{service}/up", Name = "Create and start a service")]
     public async ValueTask<ActionResult> CreateAsync(string service, [FromBody] CreatePayload payload)
     {
         var svcColl = liteDatabase.GetCollection<Service>();
@@ -124,6 +125,37 @@ public class ServiceController : ControllerBase
         {
             logger.DockerInteractionFailed(service, ex.Message, ex);
             return Problem("docker-compose failed to up", null, StatusCodes.Status500InternalServerError);
+        }
+
+        return Ok();
+    }
+
+    /// <summary>
+    ///     Start a stopped service.
+    /// </summary>
+    /// <param name="service">Service name.</param>
+    /// <returns>Ok.</returns>
+    /// <response code="200">If started.</response>
+    /// <response code="400">If the service is already running.</response>
+    /// <response code="404">If a service with this name is not found.</response>
+    [HttpPost("{service}/start", Name = "Start a stopped service")]
+    public async ValueTask<ActionResult> StartAsync(string service)
+    {
+        var svcColl = liteDatabase.GetCollection<Service>();
+        var svc = svcColl.FindOne(s => s.Name == service);
+        if (svc == null || !svc.IsCreated)
+        {
+            return Problem("Service is not found.", null, StatusCodes.Status404NotFound);
+        }
+
+        try
+        {
+            await agent.StartAsync(svc.Name, svc.Compose);
+        }
+        catch (Exception ex)
+        {
+            logger.DockerInteractionFailed(service, ex.Message, ex);
+            return Problem("docker-compose failed to start", null, StatusCodes.Status500InternalServerError);
         }
 
         return Ok();

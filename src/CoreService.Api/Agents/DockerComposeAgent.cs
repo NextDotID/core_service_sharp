@@ -67,6 +67,19 @@ public class DockerComposeAgent : IAgent
         }
     }
 
+    public async ValueTask StartAsync(string service, string compose)
+    {
+        var cmd = await BuildCommandAsync(service, compose);
+        var result = await cmd.WithArguments("start")
+            .ExecuteBufferedAsync();
+
+        if (result.ExitCode != 0)
+        {
+            logger.DockerInteractionFailed(service, result.StandardError);
+            throw new InvalidOperationException("Failed to operate docker-compose.");
+        }
+    }
+
     public async ValueTask StopAsync(string service, string compose)
     {
         var cmd = await BuildCommandAsync(service, compose);
