@@ -116,19 +116,17 @@ else
 
     private async Task ToggleService(ServiceStatus service)
     {
-        if (service.IsRunning)
+        var url = $"/api/service/{service.Name}/{(service.IsRunning ? "stop" : "start")}";
+        try
         {
-            try
+            await httpClient.PostAsync(url, null);
+        }
+        catch (Exception)
+        {
+            Snackbar.Add("Something happened (server-side)...", Severity.Error, options =>
             {
-                await httpClient.PostAsync($"/api/service/{service.Name}/stop", null);
-            }
-            catch (Exception)
-            {
-                Snackbar.Add("Something happened (server-side)...", Severity.Error, options =>
-                {
-                    options.Icon = Icons.Material.Filled.WifiTetheringError;
-                });
-            }
+                options.Icon = Icons.Material.Filled.WifiTetheringError;
+            });
         }
 
         // Refresh.
