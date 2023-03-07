@@ -26,24 +26,24 @@
             <MudTd DataLabel="Running">@(context.IsRunning ? "Yes" : "No")</MudTd>
             <MudTd DataLabel="Actions">
                 <MudButtonGroup Variant="Variant.Outlined">
-                        <MudToggleIconButton
-                            Icon="@Icons.Material.Filled.Stop"
-                            Color="Color.Warning"
-                            ToggledIcon="@Icons.Material.Filled.Start"
-                            ToggledColor="@Color.Success"
-                            Toggled="@context.IsRunning"
-                            ToggledChanged="@(() => ToggleService(context))">
-                        </MudToggleIconButton>
-                        <MudIconButton
-                            Icon="@Icons.Material.Filled.Delete"
-                            Color="Color.Error"
-                            OnClick="@(() => RemoveService(context))">
-                        </MudIconButton>
-                        <MudIconButton
-                            Icon="@Icons.Material.Filled.QueryStats"
-                            Color="Color.Info"
-                            OnClick="@(() => navigationManager.NavigateTo("/todo/service-stats"))">
-                        </MudIconButton>
+                    <MudToggleIconButton
+                        Icon="@Icons.Material.Filled.Stop"
+                        Color="Color.Warning"
+                        ToggledIcon="@Icons.Material.Filled.Start"
+                        ToggledColor="@Color.Success"
+                        Toggled="@context.IsRunning"
+                        ToggledChanged="@(() => ToggleService(context))">
+                    </MudToggleIconButton>
+                    <MudIconButton
+                        Icon="@Icons.Material.Filled.Delete"
+                        Color="Color.Error"
+                        OnClick="@(() => RemoveService(context))">
+                    </MudIconButton>
+                    <MudIconButton
+                        Icon="@Icons.Material.Filled.QueryStats"
+                        Color="Color.Info"
+                        OnClick="@(() => navigationManager.NavigateTo("/todo/service-stats"))">
+                    </MudIconButton>
                 </MudButtonGroup>
             </MudTd>
         </RowTemplate>
@@ -83,7 +83,6 @@ else
         try
         {
             var response = await httpClient.GetFromJsonAsync<SetupStatus>("/api/core/status");
-            Console.WriteLine(response);
             return response?.IsInitialized ?? false;
         }
         catch (Exception)
