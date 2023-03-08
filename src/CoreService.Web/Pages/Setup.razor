@@ -11,21 +11,22 @@
 
 <PageTitle>Setup | Core Service</PageTitle>
 
-<MudCard>
-    <MudCardContent>
-        <MudText Typo="Typo.h4">
-            Setup
-        </MudText>
-    </MudCardContent>
-    <MudCardActions>
-        <MudButton Variant="Variant.Filled"
-                   Color="Color.Primary"
-                   StartIcon="@CustomIcons.Metamask"
-                   OnClick="Connect">
-            Connect
-        </MudButton>
-    </MudCardActions>
-</MudCard>
+<div class="h-32"></div>
+<div class="grid w-full justify-center place-items-center">
+    <MudText Typo="Typo.h5" Class="font-bold text-black">Welcome to Next.ID Core Service</MudText>
+    <div class="h-12"></div>
+    <MudText Typo="Typo.body2" Class="text-black">Connect with Metamask to setup your own VPS</MudText>
+    <div class="h-6"></div>
+    <MudButton Variant="Variant.Filled"
+               Color="Color.Surface"
+               StartIcon="@CustomIcons.Metamask"
+               DisableRipple="@true"
+               Class="flex w-80 bg-white capitalize text-black"
+               IconClass="flex-none"
+               OnClick="Connect">
+        <span class="flex-1">Connect Wallet</span>
+    </MudButton>
+</div>
 
 @code {
     private IEthereumHostProvider eth = null!;
@@ -33,7 +34,6 @@
 
     protected override void OnInitialized()
     {
-        Breadcrumbs.SetItems(new BreadcrumbItem("Setup", "/", true, Icons.Material.Outlined.Lightbulb));
         eth = selectedHostProviderService.SelectedHost;
     }
 

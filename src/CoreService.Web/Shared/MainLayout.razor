@@ -4,27 +4,32 @@
 <MudDialogProvider />
 <MudSnackbarProvider />
 
-<MudLayout>
+<MudLayout Style="height: 100vh;">
     <MudAppBar Elevation="1" Fixed="@true" Class="bg-white text-black shadow">
-        <MudIcon Icon="@CustomIcons.NextId" Size="Size.Large"></MudIcon>
-        <MudText Typo="Typo.h6" Class="ml-3 font-bold">CORE SERVICE</MudText>
-        <div class="w-12"></div>
+        <div class="w-24"></div>
+        <MudIcon Icon="@CustomIcons.NextId" Size="Size.Large" Class="h-12 w-12"></MudIcon>
+        <MudText Typo="Typo.inherit" Class="ml-3 text-lg font-bold">CORE SERVICE</MudText>
+        <div class="w-6"></div>
         <MudNavMenu>
-            <div class="flex flex-row items-center justify-between" style="text-decoration: none !important;">
-                <MudNavLink Class="hover:rounded bg-white text-black mr-2"
-                            ActiveClass="rounded shadow bg-gray-100"
+            <div class="flex flex-row items-center justify-between">
+                <MudNavLink Class="mr-2 rounded hover:shadow hover:bg-gray-100"
+                            ActiveClass="shadow bg-gray-100"
                             DisableRipple="@true"
                             Href="/"
                             Match="NavLinkMatch.All">
                     Dashboard
                 </MudNavLink>
-                <MudNavLink Class="hover:rounded bg-white"
-                            ActiveClass="rounded shadow bg-gray-100"
+                <MudNavLink Class="rounded hover:shadow hover:bg-gray-100"
+                            ActiveClass="shadow bg-gray-100"
                             DisableRipple="@true"
                             Href="/create">
                     Marketplace
                 </MudNavLink>
                 <style>
+                    .mud-nav-link {
+                        border-radius: 0.25rem;
+                    }
+
                     .mud-nav-link .mud-nav-link-text {
                         margin-left: 0px;
                         margin-inline-start: 0px;
@@ -33,7 +38,7 @@
             </div>
         </MudNavMenu>
     </MudAppBar>
-    <MudMainContent Class="mx-auto bg-gray-100">
+    <MudMainContent Class="bg-gray-100" Style="height: 100vh;">
         @Body
     </MudMainContent>
 </MudLayout>

@@ -4,78 +4,89 @@
 
 <PageTitle>Dashboard | Core Service</PageTitle>
 
-@if (loaded)
-{
-<MudTable
-          Hover="true"
-          Items="@List"
-          SortLabel="Sort By"
-          T="ServiceStatus">
-        <ToolBarContent>
-            <MudText Typo="Typo.h6">Services</MudText>
-            <MudSpacer />
-            <MudTextField @bind-Value="searchString" Placeholder="Search" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
-        </ToolBarContent>
-        <HeaderContent>
-            <MudTh><MudTableSortLabel SortBy="new Func<ServiceStatus, object>(x => x.Name)">Name</MudTableSortLabel></MudTh>
-            <MudTh><MudTableSortLabel SortBy="new Func<ServiceStatus, object>(x => x.IsRunning)">Running</MudTableSortLabel></MudTh>
-            <MudTh>Actions</MudTh>
-        </HeaderContent>
-        <RowTemplate>
-            <MudTd DataLabel="Name">@Uri.UnescapeDataString(context.Name)</MudTd>
-            <MudTd DataLabel="Running">@(context.IsRunning ? "Yes" : "No")</MudTd>
-            <MudTd DataLabel="Actions">
-                <MudButtonGroup Variant="Variant.Outlined">
-                    <MudToggleIconButton
-                        Icon="@Icons.Material.Filled.Stop"
-                        Color="Color.Warning"
-                        ToggledIcon="@Icons.Material.Filled.Start"
-                        ToggledColor="@Color.Success"
-                        Toggled="@context.IsRunning"
-                        ToggledChanged="@(() => ToggleService(context))">
-                    </MudToggleIconButton>
-                    <MudIconButton
-                        Icon="@Icons.Material.Filled.Delete"
-                        Color="Color.Error"
-                        OnClick="@(() => RemoveService(context))">
+<div class="mx-28">
+    <div class="ml-2">
+        <div class="h-12"></div>
+        <div class="flex items-center justify-between">
+            <div class="flex items-center">
+                <p class="font-semibold text-base text-black">Services</p>
+                &nbsp;
+                <MudText>(@List.Count().ToString())</MudText>
+            </div>
+            <MudMenu AnchorOrigin="Origin.BottomRight">
+                <ActivatorContent>
+                    <MudButton Class="w-32 rounded bg-gray-200 hover:bg-gray-300"
+                               DisableRipple="@true">
+                        <span class="capitalize">Create</span>
+                    </MudButton>
+                </ActivatorContent>
+                <ChildContent>
+                    <MudMenuItem Class="flex bg-white hover:bg-white py-0">
+                        <MudButton Variant="Variant.Text"
+                                   Class="rounded-lg py-2 hover:bg-gray-200 w-full justify-start"
+                                   DisableRipple="@true">
+                            <span class="text-sm text-gray-700 normal-case">Import from your template</span>
+                        </MudButton>
+                    </MudMenuItem>
+                    <MudMenuItem Class="flex bg-white hover:bg-white py-0">
+                        <MudButton Variant="Variant.Text"
+                                   Class="rounded-lg py-2 hover:bg-gray-200 w-full justify-start"
+                                   DisableRipple="@true">
+                            <span class="text-sm text-gray-700 normal-case self-start">Clone from Marketplace</span>
+                        </MudButton>
+                    </MudMenuItem>
+                </ChildContent>
+            </MudMenu>
+        </div>
+        <div class="h-4"></div>
+        @foreach (var service in List)
+        {
+            <div class="flex w-full h-20 rounded-lg shadow bg-white place-items-center">
+                <MudText Typo="Typo.subtitle1" Class="ml-16 font-semibold text-black">Vault</MudText>
+                <div class="w-24"></div>
+                <MudText Typo="Typo.body2" Class="ml-18">vault.planet.next.id</MudText>
+                <MudSpacer></MudSpacer>
+                <MudIcon Icon="@Icons.Material.Filled.Circle" Class="w-3 h-3" Color="(service.IsRunning ? Color.Success: Color.Error)" />
+                <MudText Class="ml-2">@(service.IsRunning ? "Running": "Stopped")</MudText>
+                <div class="w-48"></div>
+                <div>
+                    <MudIconButton Icon="@(service.IsRunning ? Icons.Material.Outlined.PauseCircle : Icons.Material.Outlined.NotStarted)"
+                                   Color="Color.Dark"
+                                   DisableRipple="@true">
                     </MudIconButton>
-                    <MudIconButton
-                        Icon="@Icons.Material.Filled.QueryStats"
-                        Color="Color.Info"
-                        OnClick="@(() => navigationManager.NavigateTo("/todo/service-stats"))">
+                    <MudIconButton Icon="@Icons.Material.Outlined.Delete"
+                                   Color="Color.Dark"
+                                   DisableRipple="@true">
                     </MudIconButton>
-                </MudButtonGroup>
-            </MudTd>
-        </RowTemplate>
-        <PagerContent>
-            <MudTablePager PageSizeOptions="new int[]{ 10, 20, 50, 100 }" />
-        </PagerContent>
-    </MudTable>
-}
-else
-{
-    <MudSkeleton Class="" />
-    <MudSkeleton Class="my-4" SkeletonType="SkeletonType.Circle" Width="50px" Height="50px" />
-    <MudSkeleton Class="" SkeletonType="SkeletonType.Rectangle" Width="200px" Height="110px" />
-}
+                    <MudIconButton Icon="@Icons.Material.Outlined.Settings"
+                                   Color="Color.Dark"
+                                   DisableRipple="@true">
+                    </MudIconButton>
+                    <style>
+                        .mud-icon-button {
+                            padding: 8px;
+                        }
+                    </style>
+                </div>
+                <div class="mr-4"></div>
+            </div>
+            <div class="h-8"></div>
+        }
+    </div>
+</div>
 
 @code {
-    private bool loaded = false;
-    private string searchString = "";
     private IEnumerable<ServiceStatus> List { get; set; } = Array.Empty<ServiceStatus>();
 
     protected override async Task OnInitializedAsync()
     {
-        Breadcrumbs.SetItems(new BreadcrumbItem("Dashboard", "/", true, Icons.Material.Filled.Dashboard));
-        StateHasChanged();
-
         if (!await CheckSetupAsync())
         {
             navigationManager.NavigateTo("/setup");
             return;
         }
 
-        await LoadListAsync();
+        await LoadAsync();
     }
 
     private async Task<bool> CheckSetupAsync()
@@ -96,13 +107,12 @@ else
         return false;
     }
 
-    private async Task LoadListAsync()
+    private async Task LoadAsync()
     {
         try
         {
             var response = await httpClient.GetFromJsonAsync<ServicesResponse>("/api/service");
             List = response?.Services ?? Array.Empty<ServiceStatus>();
-            loaded = true;
         }
         catch (Exception)
         {
@@ -111,6 +121,8 @@ else
                 options.Icon = Icons.Material.Filled.WifiTetheringError;
             });
         }
+
+        StateHasChanged();
     }
 
     private async Task ToggleService(ServiceStatus service)
@@ -129,7 +141,7 @@ else
         }
 
         // Refresh.
-        await LoadListAsync();
+        await LoadAsync();
     }
 
     private async Task RemoveService(ServiceStatus service)
@@ -147,9 +159,6 @@ else
         }
 
         // Refresh.
-        await LoadListAsync();
+        await LoadAsync();
     }
-
-    private bool FilterFunc(ServiceStatus status) =>
-        string.IsNullOrWhiteSpace(searchString) || status.Name.Contains(searchString, StringComparison.OrdinalIgnoreCase);
 }
