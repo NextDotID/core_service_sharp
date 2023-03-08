@@ -22,7 +22,8 @@
                 <MudNavLink Class="rounded hover:shadow hover:bg-gray-100"
                             ActiveClass="shadow bg-gray-100"
                             DisableRipple="@true"
-                            Href="/create">
+                            Href="/new/"
+                            Match="NavLinkMatch.Prefix">
                     Marketplace
                 </MudNavLink>
                 <style>
@@ -39,6 +40,10 @@
         </MudNavMenu>
     </MudAppBar>
     <MudMainContent Class="bg-gray-100" Style="height: 100vh;">
-        @Body
+        <div class="mx-28">
+            <div class="ml-2">
+                @Body
+            </div>
+        </div>
     </MudMainContent>
 </MudLayout>

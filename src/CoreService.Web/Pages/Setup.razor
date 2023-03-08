@@ -39,7 +39,31 @@
 
     protected override async Task OnInitializedAsync()
     {
+        if (await CheckSetupAsync())
+        {
+            navigationManager.NavigateTo("/");
+            return;
+        }
+
         await eth.CheckProviderAvailabilityAsync();
+    }
+
+    private async Task<bool> CheckSetupAsync()
+    {
+        try
+        {
+            var response = await httpClient.GetFromJsonAsync<SetupStatus>("/api/core/status");
+            return response?.IsInitialized ?? false;
+        }
+        catch (Exception)
+        {
+            Snackbar.Add("Something happened (server-side)...", Severity.Error, options =>
+            {
+                options.Icon = Icons.Material.Filled.WifiTetheringError;
+            });
+        }
+
+        return false;
     }
 
     private async Task Connect()
