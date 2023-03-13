@@ -23,6 +23,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CoreService.Api", "src\Core
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CoreService.Web", "src\CoreService.Web\CoreService.Web.csproj", "{7396E736-C57F-4B9E-9C80-20E264475CDC}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "target", "target", "{8E5069BE-423C-46F9-A745-87BF2E5B0E69}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CoreService.Host.Wasm", "target\CoreService.Host.Wasm\CoreService.Host.Wasm.csproj", "{2DA1F34F-619F-4112-8598-2AE20044FAEC}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -41,6 +45,10 @@ Global
 		{7396E736-C57F-4B9E-9C80-20E264475CDC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7396E736-C57F-4B9E-9C80-20E264475CDC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7396E736-C57F-4B9E-9C80-20E264475CDC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2DA1F34F-619F-4112-8598-2AE20044FAEC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2DA1F34F-619F-4112-8598-2AE20044FAEC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2DA1F34F-619F-4112-8598-2AE20044FAEC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2DA1F34F-619F-4112-8598-2AE20044FAEC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -49,6 +57,7 @@ Global
 		{07A0EA68-1A0D-497A-AEC4-4CE4BEF60D4F} = {B05DF083-95EF-463E-B92E-64F1C640B9A8}
 		{1730BAA4-7F3E-4DFF-A55C-A078BF49224E} = {B05DF083-95EF-463E-B92E-64F1C640B9A8}
 		{7396E736-C57F-4B9E-9C80-20E264475CDC} = {B05DF083-95EF-463E-B92E-64F1C640B9A8}
+		{2DA1F34F-619F-4112-8598-2AE20044FAEC} = {8E5069BE-423C-46F9-A745-87BF2E5B0E69}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {8096E7DD-58E5-4459-B806-B0361A8FAF19}

@@ -1,27 +1,22 @@
 @inherits LayoutComponentBase
 
-<MudThemeProvider IsDarkMode="@true" />
+<MudThemeProvider IsDarkMode="@false" />
 <MudDialogProvider />
 <MudSnackbarProvider />
 
-<MudLayout>
-    <MudAppBar Elevation="1">
-        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@((e) => DrawerToggle())" />
-        <MudText Typo="Typo.h5" Class="ml-3">Core Service</MudText>
-        <MudSpacer />
+<MudLayout Style="height: 100vh;">
+    <MudAppBar Elevation="1" Fixed="@true" Class="bg-white text-black shadow">
+        <div class="w-24"></div>
+        <MudIcon Icon="@CustomIcons.NextId" Size="Size.Large" Class="h-12 w-12"></MudIcon>
+        <MudText Typo="Typo.inherit" Class="ml-3 text-lg font-bold">CORE SERVICE</MudText>
+        <div class="w-6"></div>
+        <NavBar></NavBar>
     </MudAppBar>
-    <MudDrawer @bind-Open="@drawerOpen" ClipMode="DrawerClipMode.Always" Elevation="2">
-        <NavMenu/>
-    </MudDrawer>   
-    <MudMainContent>
-        <MudBreadcrumbs Class="mt-0 px-5" Items="Breadcrumbs" MaxItems="6" Separator=">" />
-        <MudContainer Class="ps-0 ms-5 mt-2" MaxWidth="MaxWidth.Medium">
-            @Body
-        </MudContainer>
+    <MudMainContent Class="bg-gray-100" Style="height: 100vh;">
+        <div class="mx-28">
+            <div class="ml-2">
+                @Body
+            </div>
+        </div>
     </MudMainContent>
 </MudLayout>
-
-@code {
-    private bool drawerOpen = true;
-    void DrawerToggle() => drawerOpen = !drawerOpen;
-}

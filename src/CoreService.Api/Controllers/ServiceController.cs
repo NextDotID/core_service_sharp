@@ -215,9 +215,12 @@ public class ServiceController : ControllerBase
             return Problem("Service is still running.", null, StatusCodes.Status400BadRequest);
         }
 
+        svc.IsCreated = false;
+
         try
         {
             await agent.DownAsync(svc.Name, svc.Compose);
+            svcColl.Update(svc);
         }
         catch (Exception ex)
         {

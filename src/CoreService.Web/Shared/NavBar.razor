@@ -1,0 +1,28 @@
+<MudNavMenu>
+    <div class="flex flex-row items-center justify-between">
+        <MudNavLink Class="mr-2 rounded hover:shadow hover:bg-gray-100"
+                    ActiveClass="shadow bg-gray-100"
+                    DisableRipple="@true"
+                    Href="/"
+                    Match="NavLinkMatch.All">
+            Dashboard
+        </MudNavLink>
+        <MudNavLink Class="rounded hover:shadow hover:bg-gray-100"
+                    ActiveClass="shadow bg-gray-100"
+                    DisableRipple="@true"
+                    Href="/new/"
+                    Match="NavLinkMatch.Prefix">
+            Marketplace
+        </MudNavLink>
+        <style>
+            .mud-nav-link {
+                border-radius: 0.25rem;
+            }
+
+            .mud-nav-link .mud-nav-link-text {
+                margin-left: 0px;
+                margin-inline-start: 0px;
+            }
+        </style>
+    </div>
+</MudNavMenu>
