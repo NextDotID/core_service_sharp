@@ -1,5 +1,4 @@
 using System.Text.Json;
-using Blazored.SessionStorage;
 using CoreService.Web;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
@@ -16,7 +15,6 @@ builder.RootComponents.Add<HeadOutlet>("head::after");
 builder.Services.AddMudServices();
 builder.Services.AddSingleton(new List<BreadcrumbItem>());
 
-builder.Services.AddBlazoredSessionStorage();
 builder.Services.AddSingleton<IMetamaskInterop, MetamaskBlazorInterop>();
 builder.Services.AddSingleton<MetamaskInterceptor>();
 builder.Services.AddSingleton<MetamaskHostProvider>();
