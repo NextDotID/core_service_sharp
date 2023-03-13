@@ -10,34 +10,7 @@
         <MudIcon Icon="@CustomIcons.NextId" Size="Size.Large" Class="h-12 w-12"></MudIcon>
         <MudText Typo="Typo.inherit" Class="ml-3 text-lg font-bold">CORE SERVICE</MudText>
         <div class="w-6"></div>
-        <MudNavMenu>
-            <div class="flex flex-row items-center justify-between">
-                <MudNavLink Class="mr-2 rounded hover:shadow hover:bg-gray-100"
-                            ActiveClass="shadow bg-gray-100"
-                            DisableRipple="@true"
-                            Href="/"
-                            Match="NavLinkMatch.All">
-                    Dashboard
-                </MudNavLink>
-                <MudNavLink Class="rounded hover:shadow hover:bg-gray-100"
-                            ActiveClass="shadow bg-gray-100"
-                            DisableRipple="@true"
-                            Href="/new/"
-                            Match="NavLinkMatch.Prefix">
-                    Marketplace
-                </MudNavLink>
-                <style>
-                    .mud-nav-link {
-                        border-radius: 0.25rem;
-                    }
-
-                    .mud-nav-link .mud-nav-link-text {
-                        margin-left: 0px;
-                        margin-inline-start: 0px;
-                    }
-                </style>
-            </div>
-        </MudNavMenu>
+        <NavBar></NavBar>
     </MudAppBar>
     <MudMainContent Class="bg-gray-100" Style="height: 100vh;">
         <div class="mx-28">
