@@ -51,16 +51,20 @@
         <div class="w-48"></div>
         <div>
             <MudIconButton Icon="@(service.IsRunning ? Icons.Material.Outlined.PauseCircle : Icons.Material.Outlined.NotStarted)"
-                            Color="Color.Dark"
-                            DisableRipple="@true">
+                           Color="Color.Dark"
+                           DisableRipple="@true"
+                           OnClick="() => ToggleService(service)">
             </MudIconButton>
             <MudIconButton Icon="@Icons.Material.Outlined.Delete"
-                            Color="Color.Dark"
-                            DisableRipple="@true">
+                           Color="Color.Dark"
+                           DisableRipple="@true"
+                           Disabled="service.IsRunning"
+                           OnClick="() => RemoveService(service)">
             </MudIconButton>
             <MudIconButton Icon="@Icons.Material.Outlined.Settings"
-                            Color="Color.Dark"
-                            DisableRipple="@true">
+                           Color="Color.Dark"
+                           DisableRipple="@true"
+                           Disabled="@true">
             </MudIconButton>
             <style>
                 .mud-icon-button {
