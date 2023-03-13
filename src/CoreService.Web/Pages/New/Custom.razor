@@ -12,10 +12,14 @@
         <MudText Typo="Typo.h5" Class="font-semibold text-black justify-self-start">Create new service</MudText>
         <div class="h-1"></div>
         <MudText Typo="Typo.body2" Class="text-gray-700">Please follow the steps to configure your project and deploy it.</MudText>
-        <div class="h-8"></div>
 
         <EditForm EditContext="editContext">
             <DataAnnotationsValidator />
+
+            <ValidationSummary class="mt-2 pl-1 font-semibold text-red-600">
+            </ValidationSummary>
+
+            <div class="h-8"></div>
             <span class="text-gray-700">Service name</span><br/>
             <div class="h-2"></div>
             <InputText id="name" @bind-Value="model.Name" class="w-full h-9 rounded shadow p-2 focus:ring"></InputText>
@@ -28,7 +32,7 @@
                        Color="Color.Surface"
                        Disabled="@loading"
                        DisableRipple="@true"
-                       OnClick="GetLoading"
+                       OnClick="Prepare"
                        Class="w-full bg-black text-white hover:bg-gray-700">
                 @if (loading)
                 {
@@ -59,13 +63,6 @@
     private CreateServiceForm model = new();
     private EditContext editContext = null!;
     private PromptEntry entryBeforeEdit = null!;
-
-    private async Task GetLoading()
-    {
-        loading = true;
-        await Task.Delay(3000);
-        loading = false;
-    }
 
     protected override void OnInitialized()
     {
