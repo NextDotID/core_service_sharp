@@ -21,15 +21,17 @@
         <ChildContent>
             <MudMenuItem Class="flex bg-white hover:bg-white py-0">
                 <MudButton Variant="Variant.Text"
-                            Class="rounded-lg py-2 hover:bg-gray-200 w-full justify-start"
-                            DisableRipple="@true">
+                           Class="rounded-lg py-2 hover:bg-gray-200 w-full justify-start"
+                           DisableRipple="@true"
+                           OnClick="@(() => navigationManager.NavigateTo("/new/custom"))">
                     <span class="text-sm text-gray-700 normal-case">Import from your template</span>
                 </MudButton>
             </MudMenuItem>
             <MudMenuItem Class="flex bg-white hover:bg-white py-0">
                 <MudButton Variant="Variant.Text"
-                            Class="rounded-lg py-2 hover:bg-gray-200 w-full justify-start"
-                            DisableRipple="@true">
+                           Class="rounded-lg py-2 hover:bg-gray-200 w-full justify-start"
+                           DisableRipple="@true"
+                           OnClick="@(() => navigationManager.NavigateTo("/new/marketplace"))">
                     <span class="text-sm text-gray-700 normal-case self-start">Clone from Marketplace</span>
                 </MudButton>
             </MudMenuItem>

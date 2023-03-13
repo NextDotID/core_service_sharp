@@ -6,75 +6,48 @@
 
 <PageTitle>New Service | Core Service</PageTitle>
 
-<MudCard>
-    <MudCardContent>
-        @if (loading)
-        {
-            <MudSkeleton Class="" />
-            <MudSkeleton Class="my-4" SkeletonType="SkeletonType.Circle" Width="50px" Height="50px" />
-            <MudSkeleton Class="" SkeletonType="SkeletonType.Rectangle" Width="200px" Height="110px" />
-        }
-        else if (prepared)
-        {
-            if (Injections.Any(p => p is PromptPoint))
-            {
-                <MudTable
-                    Items="@Prompts"
-                    CommitEditTooltip="Commit Edit"
-                    RowEditPreview="BackupItem"
-                    RowEditCancel="RestoreItem"
-                    Hover="@true">
-                    <ToolBarContent>
-                        <MudText Typo="Typo.h6">Service Variables</MudText>
-                    </ToolBarContent>
-                    <ColGroup>
-                        <col style="width:50px;" />
-                        <col />
-                    </ColGroup>
-                    <HeaderContent>
-                        <MudTh>Key</MudTh>
-                        <MudTh>Value</MudTh>
-                    </HeaderContent>
-                    <RowTemplate>
-                        <MudTd DataLabel="Key">@context.Key</MudTd>
-                        <MudTd DataLabel="Value">@context.Value</MudTd>
-                    </RowTemplate>
-                    <RowEditingTemplate>
-                        <MudTd DataLabel="Key">@context.Key</MudTd>
-                        <MudTd DataLabel="Value">
-                            <MudTextField @bind-Value="@context.Value" Required></MudTextField>
-                        </MudTd>
-                    </RowEditingTemplate>
-                </MudTable>
-            }
-        }
-        else
-        {
-            <EditForm EditContext="editContext">
-                <DataAnnotationsValidator />
-                <MudTextField Label="Service Name"
-                                @bind-Value="model.Name"
-                                For="@(() => model.Name)">
-                </MudTextField>
-                <MudTextField Label="Manifest URL"
-                                @bind-Value="model.Manifest"
-                                For="@(() => model.Manifest)">
-                </MudTextField>
-            </EditForm>
-        }
-    </MudCardContent>
-    <MudCardActions>
-        <MudButton OnClick="@(() => prepared ? Build() : Prepare())"
-                    Disabled="@loading"
-                    Variant="Variant.Filled"
-                    Color="Color.Primary"
-                    Class="ml-auto"
-                    StartIcon="@Icons.Material.Filled.Add">
-            @(prepared ? "Create" : "Prepare")
-        </MudButton>
-    </MudCardActions>
-</MudCard>
+<div class="h-32"></div>
+<div class="grid w-full place-items-center">
+    <div class="w-2/5 place-items-start">
+        <MudText Typo="Typo.h5" Class="font-semibold text-black justify-self-start">Create new service</MudText>
+        <div class="h-1"></div>
+        <MudText Typo="Typo.body2" Class="text-gray-700">Please follow the steps to configure your project and deploy it.</MudText>
+        <div class="h-8"></div>
 
+        <EditForm EditContext="editContext">
+            <DataAnnotationsValidator />
+            <span class="text-gray-700">Service name</span><br/>
+            <div class="h-2"></div>
+            <InputText id="name" @bind-Value="model.Name" class="w-full h-9 rounded shadow p-2 focus:ring"></InputText>
+            <div class="h-6"></div>
+            <span class="text-gray-700">Manifest URL</span><br />
+            <div class="h-2"></div>
+            <InputText id="manifest" @bind-Value="model.Manifest" class="w-full h-9 rounded shadow p-2 focus:ring"></InputText>
+            <div class="h-10"></div>
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Surface"
+                       Disabled="@loading"
+                       DisableRipple="@true"
+                       OnClick="GetLoading"
+                       Class="w-full bg-black text-white hover:bg-gray-700">
+                @if (loading)
+                {
+                    <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+                    <span class="normal-case ms-2">Processing</span>
+                }
+                else
+                {
+                    <span class="normal-case">Create</span>
+                }
+            </MudButton>
+            <style>
+                :focus-visible {
+                    outline-width: 0px;
+                }
+            </style>
+        </EditForm>
+    </div>
+</div>
 
 @code {
     private bool loading = false;
@@ -86,6 +59,13 @@
     private CreateServiceForm model = new();
     private EditContext editContext = null!;
     private PromptEntry entryBeforeEdit = null!;
+
+    private async Task GetLoading()
+    {
+        loading = true;
+        await Task.Delay(3000);
+        loading = false;
+    }
 
     protected override void OnInitialized()
     {
