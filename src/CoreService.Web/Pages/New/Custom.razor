@@ -9,31 +9,47 @@
 <div class="h-32"></div>
 <div class="grid w-full place-items-center">
     <div class="w-2/5 place-items-start">
-        <MudText Typo="Typo.h5" Class="font-semibold text-black justify-self-start">Create new service</MudText>
+        <MudText Typo="Typo.h5" Class="font-semibold text-black justify-self-start">@(prepared ? "Service variables" : "Create new service")</MudText>
         <div class="h-1"></div>
         <MudText Typo="Typo.body2" Class="text-gray-700">Please follow the steps to configure your project and deploy it.</MudText>
-
-        <EditForm EditContext="editContext">
-            <DataAnnotationsValidator />
-
-            <ValidationSummary class="mt-2 pl-1 font-semibold text-red-600">
-            </ValidationSummary>
-
+        @if (prepared)
+        {
             <div class="h-8"></div>
-            <span class="text-gray-700">Service name</span><br/>
-            <div class="h-2"></div>
-            <InputText id="name" @bind-Value="model.Name" class="w-full h-9 rounded shadow p-2 focus:ring"></InputText>
-            <div class="h-6"></div>
-            <span class="text-gray-700">Manifest URL</span><br />
-            <div class="h-2"></div>
-            <InputText id="manifest" @bind-Value="model.Manifest" class="w-full h-9 rounded shadow p-2 focus:ring"></InputText>
+
+            <MudTable Items="@Prompts"
+                      CanCancelEdit="@true"
+                      RowEditPreview="BackupItem"
+                      RowEditCancel="RestoreItem"
+                      CommitEditTooltip="Commit"
+                      Hover="@true">
+                <ColGroup>
+                    <col class="w-1/2" />
+                    <col class="w-1/2" />
+                </ColGroup>
+                <HeaderContent>
+                    <MudTh>Key</MudTh>
+                    <MudTh>Value</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Key">@context.Key</MudTd>
+                    <MudTd DataLabel="Value">@context.Value</MudTd>
+                </RowTemplate>
+                <RowEditingTemplate>
+                    <MudTd DataLabel="Key">@context.Key</MudTd>
+                    <MudTd DataLabel="Value">
+                        <MudTextField @bind-Value="@context.Value" Required></MudTextField>
+                    </MudTd>
+                </RowEditingTemplate>
+            </MudTable>
+
             <div class="h-10"></div>
+
             <MudButton Variant="Variant.Filled"
-                       Color="Color.Surface"
-                       Disabled="@loading"
-                       DisableRipple="@true"
-                       OnClick="Prepare"
-                       Class="w-full bg-black text-white hover:bg-gray-700">
+                    Color="Color.Surface"
+                    Disabled="@loading"
+                    DisableRipple="@true"
+                    OnClick="Build"
+                    Class="w-full bg-black text-white hover:bg-gray-700">
                 @if (loading)
                 {
                     <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
@@ -41,15 +57,50 @@
                 }
                 else
                 {
-                    <span class="normal-case">Create</span>
+                    <span class="normal-case">Build</span>
                 }
             </MudButton>
-            <style>
-                :focus-visible {
-                    outline-width: 0px;
-                }
-            </style>
-        </EditForm>
+        }
+        else
+        {
+            <EditForm EditContext="editContext">
+                <DataAnnotationsValidator />
+
+                <ValidationSummary class="mt-2 pl-1 font-semibold text-red-600">
+                </ValidationSummary>
+
+                <div class="h-8"></div>
+                <span class="text-gray-700">Service name</span><br />
+                <div class="h-2"></div>
+                <InputText id="name" @bind-Value="model.Name" class="w-full h-9 rounded shadow p-2 focus:ring"></InputText>
+                <div class="h-6"></div>
+                <span class="text-gray-700">Manifest URL</span><br />
+                <div class="h-2"></div>
+                <InputText id="manifest" @bind-Value="model.Manifest" class="w-full h-9 rounded shadow p-2 focus:ring"></InputText>
+                <div class="h-10"></div>
+                <MudButton Variant="Variant.Filled"
+                       Color="Color.Surface"
+                       Disabled="@loading"
+                       DisableRipple="@true"
+                       OnClick="Prepare"
+                       Class="w-full bg-black text-white hover:bg-gray-700">
+                    @if (loading)
+                    {
+                        <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+                        <span class="normal-case ms-2">Processing</span>
+                    }
+                    else
+                    {
+                        <span class="normal-case">Create</span>
+                    }
+                </MudButton>
+            </EditForm>
+        }
+        <style>
+            :focus-visible {
+                outline-width: 0px;
+            }
+        </style>
     </div>
 </div>
 
