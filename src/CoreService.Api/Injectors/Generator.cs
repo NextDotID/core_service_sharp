@@ -2,6 +2,7 @@ namespace CoreService.Api.Injectors;
 
 using System.Security.Cryptography;
 using System.Text;
+using Nethereum.Hex.HexConvertors.Extensions;
 
 public static class Generator
 {
@@ -36,5 +37,16 @@ public static class Generator
         }
 
         return Convert.ToBase64String(data)[..length];
+    }
+
+    public static string Hex(int length)
+    {
+        var data = new byte[length / 2];
+        using (var crypto = RandomNumberGenerator.Create())
+        {
+            crypto.GetBytes(data);
+        }
+
+        return data.ToHex(false);
     }
 }

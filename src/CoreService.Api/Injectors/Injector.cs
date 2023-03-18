@@ -102,6 +102,7 @@ public partial class Injector
         {
             GenerateCategory.AlphaNumeric => Generator.AlphaNumeric(gp.Length),
             GenerateCategory.Base64 => Generator.Base64(gp.Length),
+            GenerateCategory.Hex => Generator.Hex(gp.Length),
             _ => string.Empty,
         };
 

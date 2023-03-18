@@ -6,6 +6,7 @@ public enum GenerateCategory
 {
     AlphaNumeric,
     Base64,
+    Hex,
 }
 
 public enum InternalTransform
@@ -37,6 +38,7 @@ public abstract record InjectionPoint
     {
         "AN" => new GeneratePoint(GenerateCategory.AlphaNumeric, int.Parse(parts[2]), parts[3].ToString()),
         "BASE64" => new GeneratePoint(GenerateCategory.Base64, int.Parse(parts[2]), parts[3].ToString()),
+        "HEX" => new GeneratePoint(GenerateCategory.Hex, int.Parse(parts[2]), parts[3].ToString()),
         _ => throw new ArgumentException("Invalid generate category"),
     };
 
