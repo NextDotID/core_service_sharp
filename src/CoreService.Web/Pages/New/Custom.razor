@@ -137,7 +137,11 @@
             var result = await respMsg.Content.ReadFromJsonAsync<PrepareResponse>();
             Injections = result?.Injections.Where(p => p is PromptPoint).Select(p => (p as PromptPoint)!).ToList() ?? Injections;
             Prompts = Injections.Select(p => new PromptEntry { Key = p.Key, Value = string.Empty }).ToList();
-            prepared = true;
+            prepared = Prompts.Any();
+            if (!prepared)
+            {
+                await Build();
+            }
         }
         catch (Exception)
         {
@@ -163,6 +167,7 @@
             return;
         }
 
+        loading = true;
         try
         {
             using var respMsg = await httpClient.PostAsJsonAsync($"/api/service/{model.Name}/create", new CreatePayload(Prompts.ToDictionary(p => p.Key, p => p.Value)));
@@ -180,6 +185,10 @@
             {
                 options.Icon = Icons.Material.Filled.WifiTetheringError;
             });
+        }
+        finally
+        {
+            loading = false;
         }
     }
 
