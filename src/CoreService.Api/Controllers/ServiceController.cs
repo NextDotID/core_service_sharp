@@ -105,7 +105,8 @@ public class ServiceController : ControllerBase
         }
 
         var internals = await vault.LoadInternalAsync();
-        var injected = injector.Inject(svc.Compose, internals, payload.Prompts);
+        var injected = injector.Inject(svc.Compose, internals, payload.Prompts)
+            .Replace("{{INTERNAL:SERVICE}}", service);
 
         if (!injector.Validate(injected, out var point))
         {
