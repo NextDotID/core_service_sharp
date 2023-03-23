@@ -1,0 +1,57 @@
+version: "3"
+
+services:
+  core_service:
+    container_name: core_service
+    image: nextdotid/core_service_sharp:main
+    restart: unless-stopped
+    networks:
+      - core_service
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "core_service_data:/data/"
+    environment:
+      - DATABASE__PATH=/data/core_service.db
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.cs.rule=Host(`${CS_DOMAIN_NAME}`)"
+      - "traefik.http.routers.cs.entrypoints=websecure"
+      - "traefik.http.services.cs.loadbalancer.server.port=80"
+      - "traefik.http.routers.cs.service=cs"
+      - "traefik.http.routers.cs.tls.certresolver=leresolver"
+
+  traefik:
+    container_name: traefik
+    image: "traefik:latest"
+    networks:
+      - core_service
+    command:
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+      - --providers.docker
+      - --log.level=ERROR
+      - --certificatesresolvers.leresolver.acme.httpchallenge=true
+      - --certificatesresolvers.leresolver.acme.email=${ACME_EMAIL}
+      - --certificatesresolvers.leresolver.acme.storage=/data/acme.json
+      - --certificatesresolvers.leresolver.acme.httpchallenge.entrypoint=web
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "traefik_acme_data:/data/"
+    labels:
+      - "traefik.http.routers.http-catchall.rule=hostregexp(`{host:.+}`)"
+      - "traefik.http.routers.http-catchall.entrypoints=web"
+      - "traefik.http.routers.http-catchall.middlewares=redirect-to-https"
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+
+volumes:
+  core_service_data:
+  traefik_acme_data:
+
+networks:
+  # pre-created by `docker network create core_service`
+  core_service:
+    external: true
+    
