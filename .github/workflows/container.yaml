@@ -7,7 +7,7 @@ on:
 
 jobs:
   build-image:
-    if: (github.ref_name == 'main' || github.ref_name == 'feature/CI') && github.repository == 'nextdotid/core_service_sharp'
+    if: (github.ref_name == 'main' || github.ref_name == 'develop' || github.ref_name == 'feature/CI') && github.repository == 'nextdotid/core_service_sharp'
     runs-on: ubuntu-latest
     env:
       IMAGE_NAME: ${{ github.repository }}
