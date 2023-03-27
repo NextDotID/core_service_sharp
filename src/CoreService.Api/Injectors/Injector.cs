@@ -33,15 +33,14 @@ public partial class Injector
         return result.ToList();
     }
 
-    public string Inject(string input, Internal internals, IDictionary<string, string> prompts)
+    public string Inject(string input, Internal internals, IDictionary<string, string> prompts, Dictionary<string, string> generated)
     {
         // Prevent GENERATE from being assigned different values.
-        var genDict = new Dictionary<GeneratePoint, string>();
         using var doc = JsonSerializer.SerializeToDocument(internals);
 
         return InjectPattern().Replace(input, match => InjectionPoint.FromText(match.Value[2..^2]) switch
         {
-            GeneratePoint gp => ResolveGeneratePoint(gp, genDict),
+            GeneratePoint gp => ResolveGeneratePoint(gp, generated),
             PromptPoint { Key: var key } => prompts.TryGetValue(key, out var pValue) ? pValue : match.Value,
             InternalPoint { Key: var key, Transform: var transform } => ResolveInternal(doc, key, transform) ?? match.Value,
             _ => match.Value,
@@ -91,14 +90,14 @@ public partial class Injector
         };
     }
 
-    private static string ResolveGeneratePoint(GeneratePoint gp, Dictionary<GeneratePoint, string> dict)
+    private static string ResolveGeneratePoint(GeneratePoint gp, Dictionary<string, string> dict)
     {
-        if (dict.TryGetValue(gp, out var value))
+        if (dict.TryGetValue(gp.Key, out var value))
         {
             return value;
         }
 
-        dict[gp] = gp.Category switch
+        dict[gp.Key] = gp.Category switch
         {
             GenerateCategory.AlphaNumeric => Generator.AlphaNumeric(gp.Length),
             GenerateCategory.Base64 => Generator.Base64(gp.Length),
@@ -106,6 +105,6 @@ public partial class Injector
             _ => string.Empty,
         };
 
-        return dict[gp];
+        return dict[gp.Key];
     }
 }

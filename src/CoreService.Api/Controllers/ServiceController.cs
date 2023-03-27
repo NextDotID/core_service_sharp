@@ -80,8 +80,8 @@ public class ServiceController : ControllerBase
         var points = injector.Extract(composeRaw).Distinct().ToArray();
         svc.Compose = composeRaw;
 
-        liteDatabase.GetCollection<Service>().Upsert(svc);
-        return new PrepareResponse(points);
+        svcColl.Upsert(svc);
+        return new PrepareResponse(points, svc.Prompted);
     }
 
     /// <summary>
@@ -105,7 +105,7 @@ public class ServiceController : ControllerBase
         }
 
         var internals = await vault.LoadInternalAsync();
-        var injected = injector.Inject(svc.Compose, internals, payload.Prompts)
+        var injected = injector.Inject(svc.Compose, internals, payload.Prompts, svc.Generated)
             .Replace("{{INTERNAL:SERVICE}}", service);
 
         if (!injector.Validate(injected, out var point))
@@ -114,7 +114,7 @@ public class ServiceController : ControllerBase
         }
 
         svc.Compose = injected;
-        svc.Prompts = payload.Prompts;
+        svc.Prompted = payload.Prompts;
 
         try
         {
