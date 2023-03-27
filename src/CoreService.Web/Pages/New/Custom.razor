@@ -135,7 +135,7 @@
             respMsg.EnsureSuccessStatusCode();
 
             var result = await respMsg.Content.ReadFromJsonAsync<PrepareResponse>();
-            Injections = result?.Injections.Where(p => p is PromptPoint).Select(p => (p as PromptPoint)!).ToList() ?? Injections;
+            Injections = result?.Injection.Where(p => p is PromptPoint).Select(p => (p as PromptPoint)!).ToList() ?? Injections;
             Prompts = Injections.Select(p => new PromptEntry { Key = p.Key, Value = string.Empty }).ToList();
             prepared = Prompts.Any();
             if (!prepared)
