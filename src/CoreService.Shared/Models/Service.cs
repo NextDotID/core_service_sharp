@@ -26,5 +26,7 @@ public class Service
     /// <summary>
     /// Gets or sets the user prompts.
     /// </summary>
-    public Dictionary<string, string> Prompts { get; set; } = new();
+    public Dictionary<string, string> Prompted { get; set; } = new();
+
+    public Dictionary<string, string> Generated { get; set; } = new();
 }
