@@ -27,7 +27,7 @@ jobs:
       - name: Install dependencies
         run: dotnet restore
       - name: Run dotnet format
-        uses: xt0rted/dotnet-format@v1
+        run: dotnet format --no-restore --verify-no-changes --verbosity d
       - name: Build
         run: dotnet build --no-restore
       # TODO: Insert unit test actions here
