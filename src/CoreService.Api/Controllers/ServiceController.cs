@@ -93,8 +93,8 @@ public class ServiceController : ControllerBase
     /// <response code="200">If created.</response>
     /// <response code="400">If some injection points are still presented.</response>
     /// <response code="404">If a service with this name is not found.</response>
-    [HttpPost("{service}/create", Name = "Create and start a service (deprecated)")]
     [HttpPost("{service}/up", Name = "Create and start a service")]
+    [HttpPost("{service}/create", Name = "Create and start a service (deprecated)")]
     public async ValueTask<ActionResult> CreateAsync(string service, [FromBody] CreatePayload payload)
     {
         var svcColl = liteDatabase.GetCollection<Service>();
