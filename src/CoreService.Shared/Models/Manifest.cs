@@ -1,4 +1,4 @@
-namespace CoreService.Shared.Payloads.Marketplace;
+namespace CoreService.Shared.Models;
 
 using System.Text.Json.Serialization;
 
