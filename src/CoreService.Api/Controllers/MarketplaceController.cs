@@ -189,6 +189,11 @@ public class MarketplaceController : ControllerBase
         {
             using var repo = new Repository(repoPath);
             _ = Commands.Checkout(repo, repo.Branches[BucketDefaultBranch]);
+
+            var remote = repo.Network.Remotes["origin"];
+            var resSpecs = remote.FetchRefSpecs.Select(s => s.Specification);
+            Commands.Fetch(repo, remote.Name, resSpecs, new FetchOptions(), string.Empty);
+
             var res = Commands.Pull(repo, mergerSig, new PullOptions());
             if (res.Status != MergeStatus.UpToDate)
             {
