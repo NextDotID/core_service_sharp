@@ -77,7 +77,7 @@ public class MarketplaceController : ControllerBase
         }
 
         var bucket = new Bucket { Name = info.Name, PulledAt = DateTimeOffset.Now, Url = url };
-        _ = bucketCol.Upsert(bucket);
+        _ = bucketCol.Insert(bucket);
 
         return Ok();
     }
@@ -114,6 +114,7 @@ public class MarketplaceController : ControllerBase
             }
         }
 
+        // TODO: cache list.
         return Ok(new BucketListResponse(bucket.Name, manifests));
     }
 
@@ -158,6 +159,7 @@ public class MarketplaceController : ControllerBase
             bucketLists.Add(new BucketListResponse(bucketName, manifests));
         }
 
+        // TODO: use list cache.
         return Ok(new AllBucketsListResponse(bucketLists));
     }
 }
