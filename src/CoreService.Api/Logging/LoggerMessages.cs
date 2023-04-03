@@ -19,4 +19,7 @@ public static partial class LoggerMessages
 
     [LoggerMessage(3002, LogLevel.Error, "Failed to call docker-compose: {service} {details}.")]
     public static partial void DockerInteractionFailed(this ILogger logger, string service, string? details = null, Exception? ex = null);
+
+    [LoggerMessage(4003, LogLevel.Error, "Failed to clone the marketplace bucket repository: {url}.")]
+    public static partial void MarketplaceCloneFailed(this ILogger logger, string url, Exception ex);
 }

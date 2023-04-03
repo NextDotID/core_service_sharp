@@ -4,7 +4,7 @@ using System.Text;
 using CoreService.Api.Logging;
 using CoreService.Api.Vaults;
 using CoreService.Shared.Internals;
-using CoreService.Shared.Payloads;
+using CoreService.Shared.Payloads.Core;
 using Microsoft.AspNetCore.Mvc;
 using Nethereum.Hex.HexConvertors.Extensions;
 using Nethereum.Signer;

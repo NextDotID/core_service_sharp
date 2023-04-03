@@ -5,7 +5,7 @@ using CoreService.Api.Injectors;
 using CoreService.Api.Logging;
 using CoreService.Api.Vaults;
 using CoreService.Shared.Models;
-using CoreService.Shared.Payloads;
+using CoreService.Shared.Payloads.Service;
 using LiteDB;
 using Microsoft.AspNetCore.Mvc;
 
