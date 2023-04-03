@@ -14,7 +14,6 @@ public class MarketplaceController : ControllerBase
 {
     private const string BucketInfoJsonPath = "bucket.json";
     private const string BucketManifestsPath = "manifest/";
-    private const string MainBucketUrl = "https://github.com/NextDotID/core_service_bucket.git";
 
     private readonly ILiteDatabase liteDatabase;
     private readonly ILogger logger;
