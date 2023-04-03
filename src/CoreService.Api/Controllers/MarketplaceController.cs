@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Mvc;
 [Route("api/[controller]")]
 public class MarketplaceController : ControllerBase
 {
+    private const string BucketDefaultBranch = "main";
     private const string BucketInfoJsonPath = "bucket.json";
     private const string BucketManifestsPath = "manifest/";
 
@@ -89,7 +90,7 @@ public class MarketplaceController : ControllerBase
     /// <returns>Ok.</returns>
     /// <response code="200">Application list.</response>
     /// <response code="404">If a bucket with the name is not found or does not have manifests.</response>
-    [HttpGet("list/{bucket}")]
+    [HttpGet("list/{bucketName}")]
     public async ValueTask<ActionResult<BucketListResponse>> ListAsync(string bucketName)
     {
         var bucketCol = liteDatabase.GetCollection<Bucket>();
@@ -161,5 +162,48 @@ public class MarketplaceController : ControllerBase
 
         // TODO: use list cache.
         return Ok(new AllBucketsListResponse(bucketLists));
+    }
+
+    /// <summary>
+    ///     Pull/update a bucket.
+    /// </summary>
+    /// <param name="bucketName">Bucket name.</param>
+    /// <returns>Ok.</returns>
+    /// <response code="200">If pulled correctly.</response>
+    /// <response code="404">If a bucket with the name is not found.</response>
+    /// <response code="500">If pull failed.</response>
+    [HttpPost("pull/{bucketName}")]
+    public ActionResult Pull(string bucketName)
+    {
+        var bucketCol = liteDatabase.GetCollection<Bucket>();
+        var bucket = bucketCol.FindOne(b => b.Name == bucketName);
+        if (bucket is null)
+        {
+            return Problem("Bucket with the name does not exist.", null, StatusCodes.Status404NotFound);
+        }
+
+        var now = DateTimeOffset.Now;
+        var repoPath = Path.Combine(bucketDirectory, bucket.Name);
+        var mergerSig = new Signature(nameof(CoreService), $"{nameof(CoreService)}@nextid", now);
+        try
+        {
+            using var repo = new Repository(repoPath);
+            _ = Commands.Checkout(repo, repo.Branches[BucketDefaultBranch]);
+            var res = Commands.Pull(repo, mergerSig, new PullOptions());
+            if (res.Status != MergeStatus.UpToDate)
+            {
+                throw new InvalidOperationException("Repository is not up to date.");
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.MarketplacePullFailed(bucket.Name, ex);
+            return Problem("Failed to pull repository.", null, StatusCodes.Status500InternalServerError);
+        }
+
+        bucket.PulledAt = now;
+        bucketCol.Update(bucket);
+
+        return Ok();
     }
 }
