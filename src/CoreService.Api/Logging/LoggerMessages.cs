@@ -25,4 +25,7 @@ public static partial class LoggerMessages
 
     [LoggerMessage(4004, LogLevel.Error, "Failed to pull/update the marketplace bucket repository: {name}.")]
     public static partial void MarketplacePullFailed(this ILogger logger, string name, Exception ex);
+
+    [LoggerMessage(4005, LogLevel.Error, "Failed to list the marketplace bucket applications: {name}.")]
+    public static partial void MarketplaceListFailed(this ILogger logger, string name, Exception ex);
 }

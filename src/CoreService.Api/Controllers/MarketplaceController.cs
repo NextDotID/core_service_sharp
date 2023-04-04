@@ -95,28 +95,29 @@ public class MarketplaceController : ControllerBase
     {
         var bucketCol = liteDatabase.GetCollection<Bucket>();
         var bucket = bucketCol.FindOne(b => b.Name == bucketName);
-        var manifestDir = Path.Combine(bucketDirectory, bucket.Name, BucketManifestsPath);
-        if (bucket is null
-            || !Directory.Exists(manifestDir)
-            || !Directory.GetFiles(manifestDir, "*.json").Any())
+        if (bucket is null)
         {
             return Problem("Bucket with the name does not exist.", null, StatusCodes.Status404NotFound);
         }
 
-        var files = Directory.GetFiles(manifestDir, "*.json");
-        var manifests = new List<Manifest>(files.Length);
-        foreach (var file in files)
+        var manifestDir = Path.Combine(bucketDirectory, bucket.Name, BucketManifestsPath);
+        if (!Directory.Exists(manifestDir) || !Directory.GetFiles(manifestDir, "*.json").Any())
         {
-            await using var stream = System.IO.File.OpenRead(file);
-            var manifest = await System.Text.Json.JsonSerializer.DeserializeAsync<Manifest>(stream);
-            if (manifest is not null)
-            {
-                manifests.Add(manifest);
-            }
+            return Problem("Bucket with the name does not exist.", null, StatusCodes.Status404NotFound);
         }
 
-        // TODO: cache list.
-        return Ok(new BucketListResponse(bucket.Name, manifests));
+        BucketListResponse response;
+        try
+        {
+            response = await ListBucketAsync(bucket);
+        }
+        catch (Exception ex)
+        {
+            logger.MarketplacePullFailed(bucketName, ex);
+            return Problem("Failed to list all applications in the bucket.", bucketName, StatusCodes.Status500InternalServerError);
+        }
+
+        return Ok(response);
     }
 
     /// <summary>
@@ -130,37 +131,28 @@ public class MarketplaceController : ControllerBase
     {
         var bucketCol = liteDatabase.GetCollection<Bucket>();
         var buckets = bucketCol.Find(b => b.PulledAt > DateTimeOffset.MinValue);
-
         if (!buckets.Any())
         {
             return Problem("No valid buckets.", null, StatusCodes.Status404NotFound);
         }
 
         var bucketLists = new List<BucketListResponse>();
-        foreach (var bucketName in buckets.Select(b => b.Name))
+        foreach (var bucket in buckets)
         {
-            var manifestDir = Path.Combine(bucketDirectory, bucketName, BucketManifestsPath);
-            if (!Directory.Exists(manifestDir) || !Directory.GetFiles(manifestDir, "*.json").Any())
+            BucketListResponse response;
+            try
             {
-                continue;
+                response = await ListBucketAsync(bucket);
+            }
+            catch (Exception ex)
+            {
+                logger.MarketplacePullFailed(bucket.Name, ex);
+                return Problem("Failed to list all applications in the bucket.", bucket.Name, StatusCodes.Status500InternalServerError);
             }
 
-            var files = Directory.GetFiles(manifestDir, "*.json");
-            var manifests = new List<Manifest>(files.Length);
-            foreach (var file in files)
-            {
-                await using var stream = System.IO.File.OpenRead(file);
-                var manifest = await System.Text.Json.JsonSerializer.DeserializeAsync<Manifest>(stream);
-                if (manifest is not null)
-                {
-                    manifests.Add(manifest);
-                }
-            }
-
-            bucketLists.Add(new BucketListResponse(bucketName, manifests));
+            bucketLists.Add(response);
         }
 
-        // TODO: use list cache.
         return Ok(new AllBucketsListResponse(bucketLists));
     }
 
@@ -173,7 +165,7 @@ public class MarketplaceController : ControllerBase
     /// <response code="404">If a bucket with the name is not found.</response>
     /// <response code="500">If pull failed.</response>
     [HttpPost("pull/{bucketName}")]
-    public ActionResult Pull(string bucketName)
+    public async ValueTask<ActionResult> PullAsync(string bucketName)
     {
         var bucketCol = liteDatabase.GetCollection<Bucket>();
         var bucket = bucketCol.FindOne(b => b.Name == bucketName);
@@ -182,23 +174,9 @@ public class MarketplaceController : ControllerBase
             return Problem("Bucket with the name does not exist.", null, StatusCodes.Status404NotFound);
         }
 
-        var now = DateTimeOffset.Now;
-        var repoPath = Path.Combine(bucketDirectory, bucket.Name);
-        var mergerSig = new Signature(nameof(CoreService), $"{nameof(CoreService)}@nextid", now);
         try
         {
-            using var repo = new Repository(repoPath);
-            _ = Commands.Checkout(repo, repo.Branches[BucketDefaultBranch]);
-
-            var remote = repo.Network.Remotes["origin"];
-            var resSpecs = remote.FetchRefSpecs.Select(s => s.Specification);
-            Commands.Fetch(repo, remote.Name, resSpecs, new FetchOptions(), string.Empty);
-
-            var res = Commands.Pull(repo, mergerSig, new PullOptions());
-            if (res.Status != MergeStatus.UpToDate)
-            {
-                throw new InvalidOperationException("Repository is not up to date.");
-            }
+            await PullBucketAsync(bucket);
         }
         catch (Exception ex)
         {
@@ -206,9 +184,49 @@ public class MarketplaceController : ControllerBase
             return Problem("Failed to pull repository.", null, StatusCodes.Status500InternalServerError);
         }
 
-        bucket.PulledAt = now;
         bucketCol.Update(bucket);
-
         return Ok();
+    }
+
+    private async ValueTask<BucketListResponse> ListBucketAsync(Bucket bucket)
+    {
+        var manifestDir = Path.Combine(bucketDirectory, bucket.Name, BucketManifestsPath);
+        var files = Directory.GetFiles(manifestDir, "*.json");
+
+        var manifests = new List<Manifest>(files.Length);
+        foreach (var file in files)
+        {
+            await using var stream = System.IO.File.OpenRead(file);
+            var manifest = await System.Text.Json.JsonSerializer.DeserializeAsync<Manifest>(stream);
+            if (manifest is not null)
+            {
+                manifests.Add(manifest);
+            }
+        }
+
+        return new BucketListResponse(bucket.Name, manifests);
+    }
+
+    private ValueTask PullBucketAsync(Bucket bucket)
+    {
+        var now = DateTimeOffset.Now;
+        var repoPath = Path.Combine(bucketDirectory, bucket.Name);
+        var mergerSig = new Signature(nameof(CoreService), $"{nameof(CoreService)}@nextid", now);
+
+        using var repo = new Repository(repoPath);
+        _ = Commands.Checkout(repo, repo.Branches[BucketDefaultBranch]);
+
+        var remote = repo.Network.Remotes["origin"];
+        var resSpecs = remote.FetchRefSpecs.Select(s => s.Specification);
+        Commands.Fetch(repo, remote.Name, resSpecs, new FetchOptions(), string.Empty);
+
+        var res = Commands.Pull(repo, mergerSig, new PullOptions());
+        if (res.Status != MergeStatus.UpToDate)
+        {
+            throw new InvalidOperationException("Repository is not up to date.");
+        }
+
+        bucket.PulledAt = now;
+        return ValueTask.CompletedTask;
     }
 }
