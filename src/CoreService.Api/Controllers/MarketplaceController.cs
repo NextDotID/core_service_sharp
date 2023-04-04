@@ -125,7 +125,7 @@ public class MarketplaceController : ControllerBase
     /// </summary>
     /// <returns>Ok.</returns>
     /// <response code="200">Application list from all buckets.</response>
-    /// <response code="404">If there is no valid buckets.</response>
+    /// <response code="404">If there are no valid buckets.</response>
     [HttpPost("list")]
     public async ValueTask<ActionResult<BucketListResponse>> ListAllAsync()
     {
@@ -162,8 +162,7 @@ public class MarketplaceController : ControllerBase
     /// <param name="bucketName">Bucket name.</param>
     /// <returns>Ok.</returns>
     /// <response code="200">If pulled correctly.</response>
-    /// <response code="404">If a bucket with the name is not found.</response>
-    /// <response code="500">If pull failed.</response>
+    /// <response code="404">If there are no valid buckets.</response>
     [HttpPost("pull/{bucketName}")]
     public async ValueTask<ActionResult> PullAsync(string bucketName)
     {
@@ -186,6 +185,56 @@ public class MarketplaceController : ControllerBase
 
         bucketCol.Update(bucket);
         return Ok();
+    }
+
+    /// <summary>
+    ///     Pull/update all buckets.
+    /// </summary>
+    /// <returns>Ok (empty), or error messages while pulling if at least one bucket were not pulled.</returns>
+    /// <response code="200">If at least one bucket was pulled.</response>
+    /// <response code="404">If there are no valid buckets.</response>
+    /// <response code="500">If all buckets were not pulled correctly.</response>
+    [HttpPost("pull")]
+    public async ValueTask<ActionResult<ProblemDetails>> PullAllAsync()
+    {
+        var bucketCol = liteDatabase.GetCollection<Bucket>();
+        var buckets = bucketCol.FindAll().ToList();
+        if (!buckets.Any())
+        {
+            return Problem("No valid buckets.", null, StatusCodes.Status404NotFound);
+        }
+
+        // <Bucket Name, Error messages>.
+        var errors = new Dictionary<string, string>();
+        foreach (var bucket in buckets)
+        {
+            try
+            {
+                await PullBucketAsync(bucket);
+            }
+            catch (Exception ex)
+            {
+                logger.MarketplacePullFailed(bucket.Name, ex);
+                errors[bucket.Name] = ex.Message;
+            }
+        }
+
+        var problem = new ProblemDetails
+        {
+            Detail = $"{buckets.Count} bucket(s) were not pulled correctly.",
+            Title = "Error occurred while pulling buckets.",
+            Status = StatusCodes.Status200OK,
+        };
+        problem.Extensions["errors"] = errors;
+
+        // Only 500 if all buckets were not pulled.
+        if (errors.Count >= buckets.Count)
+        {
+            problem.Status = StatusCodes.Status500InternalServerError;
+            return StatusCode(StatusCodes.Status500InternalServerError, problem);
+        }
+
+        return errors.Any() ? Ok(problem) : Ok();
     }
 
     private async ValueTask<BucketListResponse> ListBucketAsync(Bucket bucket)

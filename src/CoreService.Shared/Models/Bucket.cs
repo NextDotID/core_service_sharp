@@ -5,7 +5,7 @@ public class Bucket
     public int Id { get; set; }
 
     /// <summary>
-    /// Gets or sets service name.
+    /// Gets or sets the bucket name.
     /// </summary>
     public string Name { get; set; } = string.Empty;
 
