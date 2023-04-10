@@ -3,6 +3,7 @@ namespace CoreService.Shared.Models;
 using System.Text.Json.Serialization;
 
 public record Manifest(
+    [property: JsonPropertyName("title")] string Title,
     [property: JsonPropertyName("version")] string Version,
     [property: JsonPropertyName("icon")] string Icon,
     [property: JsonPropertyName("description")] string Description,
