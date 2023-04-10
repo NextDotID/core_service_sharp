@@ -1,4 +1,4 @@
-namespace CoreService.Shared.Payloads;
+namespace CoreService.Shared.Payloads.Service;
 
 using CoreService.Shared.Injectors;
 
