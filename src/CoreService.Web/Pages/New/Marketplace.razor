@@ -2,12 +2,55 @@
 @page "/new/"
 @using System.ComponentModel.DataAnnotations;
 @using CoreService.Shared.Injectors;
+@using CoreService.Shared.Models;
+@using CoreService.Shared.Payloads.Marketplace;
 @inject HttpClient httpClient;
 @inject NavigationManager navigationManager;
 
 <PageTitle>Marketplace | Core Service</PageTitle>
 
-<div class="h-32"></div>
-<div class="flex w-full justify-center">
-    <MudText Typo="Typo.subtitle1" Class="text-black font-semibold">This is a placeholder...</MudText>
+<div class="h-12"></div>
+<div class="flex w-full items-center justify-between">
+    <div>
+        <p class="font-semibold text-black text-2xl">Select a template</p>
+        <div class="h-1"></div>
+        <p class="font-normal text-sm">Please follow the steps to configure your project and deploy it.</p>
+    </div>
 </div>
+<div class="h-12"></div>
+
+<div class="grid grid-cols-3 gap-12">
+    @foreach (var manifest in Manifests)
+    {
+        <div class="h-44 rounded-xl shadow-lg bg-white px-6 py-8 cursor-pointer hover:shadow-xl">
+            <MudIcon Icon="@manifest.Icon" Size="Size.Large" Class="mb-2"></MudIcon>
+            <MudText Typo="Typo.subtitle1" Class="text-black font-semibold mb-1">@manifest.Title</MudText>
+            <MudText Typo="Typo.caption" Class="text-black">@manifest.Description</MudText>
+        </div>
+    }
+</div>
+
+@code {
+    private IEnumerable<Manifest> Manifests { get; set; } = Array.Empty<Manifest>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await ListAsync();
+    }
+
+    private async Task ListAsync()
+    {
+        try
+        {
+            var response = await httpClient.GetFromJsonAsync<AllBucketsListResponse>("/api/marketplace/list");
+            Manifests = response?.Buckets.SelectMany(b => b.Manifests) ?? throw new Exception();
+        }
+        catch (Exception)
+        {
+            Snackbar.Add("Something happened (server-side)...", Severity.Error, options =>
+            {
+                options.Icon = Icons.Material.Filled.WifiTetheringError;
+            });
+        }
+    }
+}
